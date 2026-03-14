@@ -1,6 +1,6 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
@@ -24,7 +24,38 @@ const MOCK_TOP_RATED = [
 export default function HomeownerDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Pending');
+  const [reliabilityFilter, setReliabilityFilter] = useState('All Workers');
   const insets = useSafeAreaInsets();
+
+  const handleShowDetails = (reqTitle: string) => {
+    Alert.alert('Details', `Showing details for ${reqTitle}.`);
+  };
+
+  const handleCancelRequest = (reqTitle: string) => {
+    Alert.alert('Request Cancelled', `${reqTitle} was cancelled. If you want you can create a new request.`);
+  };
+
+  const handleReliabilityDropdown = () => {
+    const next = reliabilityFilter === 'All Workers' ? 'Top 10% Workers' : reliabilityFilter === 'Top 10% Workers' ? 'Top 20% Workers' : 'All Workers';
+    setReliabilityFilter(next);
+    Alert.alert('Filter Applied', `Showing ${next}.`);
+  };
+
+  const handleTopRatedViewAll = () => {
+    Alert.alert('Top Rated', 'Opening full Top Rated list (demo placeholder).');
+  };
+
+  const handleTopRatedProfile = (name: string) => {
+    Alert.alert('Worker Profile', `Opening profile for ${name} (demo placeholder).`);
+  };
+
+  const handleMessage = (reqTitle: string) => {
+    Alert.alert('Message', `Opening chat for ${reqTitle}.`);
+  };
+
+  const handleBookNow = () => {
+    router.push('/(tabs)/services');
+  };
 
   if (user?.role === 'worker') {
     return <Redirect href="/(tabs)/explore" />;
@@ -67,9 +98,9 @@ export default function HomeownerDashboard() {
           </View>
           <View style={styles.scoreRow}>
             <Text style={styles.scoreLabel}>RELIABILITY SCORE</Text>
-            <View style={styles.scoreDropdown}>
-              <Text style={styles.scoreDropdownText}>All Workers ★  ˅</Text>
-            </View>
+            <TouchableOpacity style={styles.scoreDropdown} onPress={handleReliabilityDropdown} activeOpacity={0.7}>
+              <Text style={styles.scoreDropdownText}>{reliabilityFilter} ★  ˅</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -116,11 +147,11 @@ export default function HomeownerDashboard() {
                 )}
                 <View style={styles.reqActions}>
                   {req.isSearching ? (
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={styles.cancelText} onPress={() => handleCancelRequest(req.title)}>Cancel</Text>
                   ) : (
                     <>
-                      <Button title="Details" type="outline" size="sm" onPress={() => { }} style={styles.actionBtnSmall} textStyle={styles.actionBtnTextSmall} />
-                      <Button title="Message" type="primary" size="sm" onPress={() => { }} style={[styles.actionBtnSmall, styles.actionBtnPrimary]} textStyle={styles.actionBtnTextPrimary} />
+                      <Button title="Details" type="outline" size="sm" onPress={() => handleShowDetails(req.title)} style={styles.actionBtnSmall} textStyle={styles.actionBtnTextSmall} />
+                      <Button title="Message" type="primary" size="sm" onPress={() => handleMessage(req.title)} style={[styles.actionBtnSmall, styles.actionBtnPrimary]} textStyle={styles.actionBtnTextPrimary} />
                     </>
                   )}
                 </View>
@@ -133,16 +164,16 @@ export default function HomeownerDashboard() {
           <Card style={styles.bookBannerCard}>
             <Text style={styles.bannerTitle}>Need a new service?</Text>
             <Text style={styles.bannerSub}>Find reliable workers for your next project instantly.</Text>
-            <Button title="Book Now" type="outline" onPress={() => { }} style={styles.bannerBtn} textStyle={styles.bannerBtnText} />
+            <Button title="Book Now" type="outline" onPress={handleBookNow} style={styles.bannerBtn} textStyle={styles.bannerBtnText} />
           </Card>
 
           <Card style={styles.topRatedCard}>
             <View style={styles.trHeader}>
               <Text style={styles.trTitle}>Top Rated Nearby</Text>
-              <Text style={styles.trLink}>View All</Text>
+              <Text style={styles.trLink} onPress={handleTopRatedViewAll}>View All</Text>
             </View>
             {MOCK_TOP_RATED.map(tr => (
-              <View key={tr.id} style={styles.trItem}>
+              <TouchableOpacity key={tr.id} style={styles.trItem} onPress={() => handleTopRatedProfile(tr.name)} activeOpacity={0.75}>
                 <View style={styles.trAvatar}><Text style={styles.trAvatarText}>{tr.name[0]}</Text></View>
                 <View style={styles.trInfo}>
                   <Text style={styles.trName}>{tr.name}</Text>
@@ -152,7 +183,7 @@ export default function HomeownerDashboard() {
                   <Text style={styles.trRating}>{tr.rating}★</Text>
                   <Text style={styles.trRel}>{tr.rel} {tr.id === '3' ? '' : 'Reliability'}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </Card>
         </View>

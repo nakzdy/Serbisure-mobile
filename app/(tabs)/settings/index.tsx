@@ -1,6 +1,6 @@
 import { signOut } from 'firebase/auth';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../components/Button';
 import { Card, Input } from '../../../components/CommonUI';
@@ -11,7 +11,17 @@ import { useAuth } from '../../../contexts/AuthContext';
 export default function SettingsScreen() {
     const { user } = useAuth();
     const [darkMode, setDarkMode] = useState(true);
+    const [newPassword, setNewPassword] = useState('');
+    const [language, setLanguage] = useState('English');
     const insets = useSafeAreaInsets();
+
+    const handleChangePicture = () => {
+        Alert.alert('Change Picture', 'This feature is coming soon (Image picker integration).');
+    };
+
+    const handleSaveChanges = () => {
+        Alert.alert('Settings Saved', `Dark mode: ${darkMode ? 'Enabled' : 'Disabled'}\nLanguage: ${language}`);
+    };
 
     const handleLogout = async () => {
         try {
@@ -35,7 +45,7 @@ export default function SettingsScreen() {
                         <View style={styles.avatar}>
                             <Text style={styles.avatarText}>{user?.name?.[0] || 'U'}</Text>
                         </View>
-                        <Button title="Change Picture" size="sm" onPress={() => { }} style={styles.changePicBtn} />
+                        <Button title="Change Picture" size="sm" onPress={handleChangePicture} style={styles.changePicBtn} />
                     </View>
                 </Card>
             </View>
@@ -55,10 +65,22 @@ export default function SettingsScreen() {
                     <Text style={styles.label}>NEW PASSWORD</Text>
                     <View style={styles.inputWrapper}>
                         <Input
+                            value={newPassword}
                             placeholder="••••••••"
                             secureTextEntry
-                            onChangeText={() => { }}
+                            onChangeText={setNewPassword}
                         />
+                    </View>
+
+                    <Text style={styles.label}>LANGUAGE</Text>
+                    <View style={styles.inputWrapper}>
+                        <TouchableOpacity onPress={() => {
+                            const next = language === 'English' ? 'Filipino' : 'English';
+                            setLanguage(next);
+                            Alert.alert('Language changed', `Selected: ${next}`);
+                        }} style={styles.langSelect}>
+                            <Text style={styles.langText}>{language} ˅</Text>
+                        </TouchableOpacity>
                     </View>
                 </Card>
             </View>
@@ -88,7 +110,7 @@ export default function SettingsScreen() {
                 </Card>
             </View>
             <View style={styles.actionSection}>
-                <Button title="Save Changes" onPress={() => { }} style={styles.saveBtn} />
+                <Button title="Save Changes" onPress={handleSaveChanges} style={styles.saveBtn} />
                 <Button title="Log Out" type="secondary" onPress={handleLogout} style={styles.logoutBtn} textStyle={styles.logoutText} />
             </View>
         </ScrollView>

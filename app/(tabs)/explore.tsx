@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
@@ -39,7 +39,22 @@ const MOCK_ACTIVE = [
 export default function WorkerDashboard() {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
+  const [acceptedJobs, setAcceptedJobs] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
+
+  const handleAcceptJob = (id: string) => {
+    if (acceptedJobs.includes(id)) {
+      Alert.alert('Notice', 'You already accepted this request.');
+      return;
+    }
+    setAcceptedJobs(prev => [...prev, id]);
+    Alert.alert('Job Accepted', 'Great job! You have scheduled this request.');
+  };
+
+  const handleDeclineJob = (id: string) => {
+    Alert.alert('Request Declined', 'This request was declined. You can choose another job.');
+    setAcceptedJobs(prev => prev.filter(item => item !== id));
+  };
 
   if (user?.role === 'homeowner') {
     return <Redirect href="/(tabs)" />;
@@ -83,7 +98,7 @@ export default function WorkerDashboard() {
         <View style={styles.col}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Incoming Requests (1)</Text>
-            <Text style={styles.viewLink}>View History</Text>
+            <Text style={styles.viewLink} onPress={() => Alert.alert('History', 'Redirecting to your completed jobs.')}>View History</Text>
           </View>
 
           {MOCK_INCOMING.map(req => (
@@ -105,8 +120,19 @@ export default function WorkerDashboard() {
               </View>
 
               <View style={styles.actionRow}>
-                <Text style={styles.declineText}>Decline</Text>
-                <Button title="Accept Job" size="sm" onPress={() => { }} style={styles.acceptBtn} />
+                <Text
+                  style={styles.declineText}
+                  onPress={() => handleDeclineJob(req.id)}
+                >
+                  Decline
+                </Text>
+                <Button
+                  title={acceptedJobs.includes(req.id) ? 'Accepted' : 'Accept Job'}
+                  size="sm"
+                  onPress={() => handleAcceptJob(req.id)}
+                  style={styles.acceptBtn}
+                  disabled={acceptedJobs.includes(req.id)}
+                />
               </View>
             </Card>
           ))}
@@ -129,7 +155,7 @@ export default function WorkerDashboard() {
         <View style={styles.col}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Reviews</Text>
-            <Text style={styles.viewLink}>See All</Text>
+            <Text style={styles.viewLink} onPress={() => Alert.alert('See All', 'Opening all reviews in a new view.')}>See All</Text>
           </View>
 
           <Card style={styles.reviewsCard}>

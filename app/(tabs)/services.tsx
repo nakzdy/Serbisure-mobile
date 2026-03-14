@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
@@ -20,19 +20,42 @@ const MOCK_WORKERS = [
 export default function ServicesScreen() {
     const { user } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [bookedWorkerId, setBookedWorkerId] = useState<string | null>(null);
     const insets = useSafeAreaInsets();
+
+    const filteredWorkers = selectedCategory === 'All'
+        ? MOCK_WORKERS
+        : MOCK_WORKERS.filter(w => w.skills.some(skill => skill.toLowerCase().includes(selectedCategory.toLowerCase())));
+
+    const handleBookService = (workerId: string, workerName: string) => {
+        if (bookedWorkerId === workerId) {
+            Alert.alert('Already Booked', `${workerName} is already in your requests.`);
+            return;
+        }
+        setBookedWorkerId(workerId);
+        Alert.alert('Service Booked', `You have requested ${workerName}. We sent a confirmation email.`);
+    };
+
+    const handleSearch = () => {
+        Alert.alert('Search', 'Search by name or skill is coming soon.');
+    };
+
+    const handleViewWorkerDetails = (workerName: string) => {
+        Alert.alert('Worker Details', `Opening profile for ${workerName} (demo placeholder).`);
+    };
 
     if (user?.role === 'worker') {
         return <Redirect href="/(tabs)/explore" />;
     }
 
     const renderWorker = ({ item }: { item: typeof MOCK_WORKERS[0] }) => (
-        <Card style={styles.workerCard}>
-            <View style={styles.workerHeader}>
-                <View style={styles.avatarPlaceholder}>
-                    {/* The screenshot shows a grey generic bust, we will use a muted placeholder with an icon or initials */}
-                    <Text style={styles.avatarText}>{item.name[0]}</Text>
-                </View>
+        <TouchableOpacity onPress={() => handleViewWorkerDetails(item.name)} activeOpacity={0.8}>
+            <Card style={styles.workerCard}>
+                <View style={styles.workerHeader}>
+                    <View style={styles.avatarPlaceholder}>
+                        {/* The screenshot shows a grey generic bust, we will use a muted placeholder with an icon or initials */}
+                        <Text style={styles.avatarText}>{item.name[0]}</Text>
+                    </View>
                 <View style={styles.workerInfo}>
                     <Text style={styles.workerName}>{item.name}</Text>
                     <View style={styles.verifiedRow}>
@@ -66,11 +89,13 @@ export default function ServicesScreen() {
             </View>
 
             <Button
-                title="Book Service"
-                onPress={() => { }}
+                title={bookedWorkerId === item.id ? 'Booked' : 'Book Service'}
+                onPress={() => handleBookService(item.id, item.name)}
                 style={styles.bookButton}
+                disabled={bookedWorkerId === item.id}
             />
         </Card>
+        </TouchableOpacity>
     );
 
     return (
@@ -85,9 +110,9 @@ export default function ServicesScreen() {
 
             <View style={styles.searchSection}>
                 {/* We will mock a search bar look alike the screenshot */}
-                <View style={styles.searchBar}>
+                <TouchableOpacity style={styles.searchBar} onPress={handleSearch} activeOpacity={0.7}>
                     <Text style={styles.searchPlaceholder}>Search by name or skill...</Text>
-                </View>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.section}>
@@ -105,11 +130,15 @@ export default function ServicesScreen() {
             </View>
 
             <View style={styles.gridSection}>
-                {MOCK_WORKERS.map(worker => (
-                    <View key={worker.id} style={styles.gridItem}>
-                        {renderWorker({ item: worker })}
-                    </View>
-                ))}
+                {filteredWorkers.length > 0 ? (
+                    filteredWorkers.map(worker => (
+                        <View key={worker.id} style={styles.gridItem}>
+                            {renderWorker({ item: worker })}
+                        </View>
+                    ))
+                ) : (
+                    <Text style={styles.noResults}>No workers found for '{selectedCategory}'.</Text>
+                )}
             </View>
         </ScrollView>
     );
@@ -279,5 +308,11 @@ const styles = StyleSheet.create({
     },
     bookButton: {
         width: '100%',
+    },
+    noResults: {
+        color: Theme.colors.textMuted,
+        textAlign: 'center',
+        paddingVertical: 32,
+        fontSize: 14,
     }
 });
