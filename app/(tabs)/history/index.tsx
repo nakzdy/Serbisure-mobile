@@ -111,7 +111,7 @@ export default function HistoryScreen() {
                                         </View>
                                     </View>
                                     <Text style={styles.itemCategory}>
-                                        {item.category} • {isWorker ? item.homeowner : item.worker}
+                                        {item.category} - {isWorker ? item.homeowner : item.worker}
                                     </Text>
                                     <View style={styles.reqDetailsRow}>
                                         <Text style={styles.itemMeta}>Requested: {item.date}</Text>
@@ -265,6 +265,8 @@ const createStyles = (colors: typeof import('../../../constants/theme').DarkColo
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: 12,
+        flexWrap: 'wrap',
     },
     itemMeta: {
         color: colors.textMuted,
@@ -274,6 +276,7 @@ const createStyles = (colors: typeof import('../../../constants/theme').DarkColo
         color: colors.accent,
         fontSize: 14,
         letterSpacing: 2,
+        flexShrink: 0,
     },
     noRating: {
         color: colors.textMuted,

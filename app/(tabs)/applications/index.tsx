@@ -15,7 +15,8 @@ export default function ApplicationsScreen() {
   const insets = useSafeAreaInsets();
 
   const workerName = user?.name || '';
-  const visibleApps = workerName ? applications.filter(app => app.workerName === workerName) : applications;
+  const hasMatch = workerName ? applications.some(app => app.workerName === workerName) : false;
+  const visibleApps = workerName && hasMatch ? applications.filter(app => app.workerName === workerName) : applications;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 100 }}>

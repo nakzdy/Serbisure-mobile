@@ -4,17 +4,20 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 type Settings = {
   language: 'English' | 'Filipino';
   avatarColor: string;
+  mockDataEnabled: boolean;
 };
 
 type SettingsContextValue = {
   settings: Settings;
   setLanguage: (language: Settings['language']) => void;
   setAvatarColor: (color: string) => void;
+  setMockDataEnabled: (enabled: boolean) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
   language: 'English',
   avatarColor: '#638cff',
+  mockDataEnabled: true,
 };
 
 const STORAGE_KEY = 'serbisure.settings';
@@ -23,6 +26,7 @@ const SettingsContext = createContext<SettingsContextValue>({
   settings: DEFAULT_SETTINGS,
   setLanguage: () => {},
   setAvatarColor: () => {},
+  setMockDataEnabled: () => {},
 });
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -58,6 +62,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     settings,
     setLanguage: (language: Settings['language']) => setSettings(prev => ({ ...prev, language })),
     setAvatarColor: (color: string) => setSettings(prev => ({ ...prev, avatarColor: color })),
+    setMockDataEnabled: (enabled: boolean) => setSettings(prev => ({ ...prev, mockDataEnabled: enabled })),
   }), [settings]);
 
   return (

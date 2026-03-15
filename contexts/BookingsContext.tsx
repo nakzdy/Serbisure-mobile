@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { INITIAL_BOOKINGS } from '../data/mockWorker';
+import { useSettings } from './SettingsContext';
 
 export type Booking = {
   id: string;
@@ -32,31 +34,40 @@ const BookingsContext = createContext<BookingsContextValue>({
 
 export const BookingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const load = async () => {
       try {
+        if (settings.mockDataEnabled) {
+          setBookings(INITIAL_BOOKINGS);
+          return;
+        }
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           setBookings(JSON.parse(raw));
+        } else {
+          setBookings([]);
         }
       } catch (error) {
         console.warn('Failed to load bookings', error);
+        setBookings(settings.mockDataEnabled ? INITIAL_BOOKINGS : []);
       }
     };
     load();
-  }, []);
+  }, [settings.mockDataEnabled]);
 
   useEffect(() => {
     const persist = async () => {
       try {
+        if (settings.mockDataEnabled) return;
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
       } catch (error) {
         console.warn('Failed to persist bookings', error);
       }
     };
     persist();
-  }, [bookings]);
+  }, [bookings, settings.mockDataEnabled]);
 
   const value = useMemo(() => ({
     bookings,

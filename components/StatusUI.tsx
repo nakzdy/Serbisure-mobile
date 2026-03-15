@@ -52,11 +52,12 @@ const StatusIndicatorInner: React.FC<StatusProps> = ({ status }) => {
 
 const createStyles = (colors: typeof import('../constants/theme').DarkColors) => StyleSheet.create({
     badge: {
-        paddingHorizontal: 14, // Match .system-status-badge padding 6px 14px
-        paddingVertical: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
         borderRadius: 20, // Match .system-status-badge
         alignSelf: 'flex-start',
         borderWidth: 1, // Web badge has border
+        maxWidth: 120,
     },
     badge_primary: {
         backgroundColor: 'rgba(99, 140, 255, 0.15)',
@@ -78,6 +79,8 @@ const createStyles = (colors: typeof import('../constants/theme').DarkColors) =>
     badgeText: {
         fontSize: 12, // Match .system-status-badge
         fontWeight: '600',
+        flexShrink: 1,
+        textAlign: 'center',
     },
     badgeText_primary: { color: colors.accent },
     badgeText_outline: { color: colors.textMuted },

@@ -13,7 +13,7 @@ import { useSettings } from '../../../contexts/SettingsContext';
 export default function SettingsScreen() {
     const { user } = useAuth();
     const { colors, darkMode, setDarkMode } = useTheme();
-    const { settings, setLanguage, setAvatarColor } = useSettings();
+    const { settings, setLanguage, setAvatarColor, setMockDataEnabled } = useSettings();
     const styles = createStyles(colors);
     const [newPassword, setNewPassword] = useState('');
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
@@ -113,7 +113,7 @@ export default function SettingsScreen() {
                     <View style={styles.inputWrapper}>
                         <Input
                             value={newPassword}
-                            placeholder="••••••••"
+                            placeholder="********"
                             secureTextEntry
                             onChangeText={setNewPassword}
                         />
@@ -122,7 +122,7 @@ export default function SettingsScreen() {
                     <Text style={styles.label}>LANGUAGE</Text>
                     <View style={styles.inputWrapper}>
                         <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.langSelect}>
-                            <Text style={styles.langText}>{settings.language} ▾</Text>
+                            <Text style={styles.langText}>{settings.language} v</Text>
                         </TouchableOpacity>
                     </View>
                 </Card>
@@ -145,9 +145,22 @@ export default function SettingsScreen() {
                     </View>
                     <View style={styles.prefDivider} />
                     <View style={styles.prefRow}>
+                        <View>
+                            <Text style={styles.prefLabel}>Mock Data</Text>
+                            <Text style={styles.prefHint}>Use sample data for worker dashboards</Text>
+                        </View>
+                        <Switch
+                            value={settings.mockDataEnabled}
+                            onValueChange={setMockDataEnabled}
+                            trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                            thumbColor={'#FFF'}
+                        />
+                    </View>
+                    <View style={styles.prefDivider} />
+                    <View style={styles.prefRow}>
                         <Text style={styles.prefLabel}>Language</Text>
                         <TouchableOpacity style={styles.langSelect} onPress={() => setShowLanguageModal(true)}>
-                            <Text style={styles.langText}>{settings.language} ▾</Text>
+                            <Text style={styles.langText}>{settings.language} v</Text>
                         </TouchableOpacity>
                     </View>
                 </Card>
@@ -232,6 +245,11 @@ const createStyles = (colors: typeof import('../../../constants/theme').DarkColo
         color: colors.text,
         fontSize: 15,
         fontWeight: '500',
+    },
+    prefHint: {
+        color: colors.textMuted,
+        fontSize: 12,
+        marginTop: 4,
     },
     toggleGroup: {
         flexDirection: 'row',

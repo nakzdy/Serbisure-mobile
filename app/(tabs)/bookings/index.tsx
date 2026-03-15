@@ -23,8 +23,9 @@ export default function BookingsScreen() {
 
   const isWorker = user?.role === 'worker';
   const workerName = user?.name || '';
+  const hasMatch = workerName ? bookings.some(b => b.workerName === workerName) : false;
   const visibleBookings = isWorker
-    ? bookings.filter(b => b.workerName === workerName)
+    ? (hasMatch ? bookings.filter(b => b.workerName === workerName) : bookings)
     : bookings;
 
   const openRequests = requests.filter(r => r.status === 'Open');

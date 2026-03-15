@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { INITIAL_APPLICATIONS } from '../data/mockWorker';
+import { useSettings } from './SettingsContext';
 
 export type Application = {
   id: string;
@@ -27,31 +29,40 @@ const ApplicationsContext = createContext<ApplicationsContextValue>({
 
 export const ApplicationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [applications, setApplications] = useState<Application[]>([]);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const load = async () => {
       try {
+        if (settings.mockDataEnabled) {
+          setApplications(INITIAL_APPLICATIONS);
+          return;
+        }
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           setApplications(JSON.parse(raw));
+        } else {
+          setApplications([]);
         }
       } catch (error) {
         console.warn('Failed to load applications', error);
+        setApplications(settings.mockDataEnabled ? INITIAL_APPLICATIONS : []);
       }
     };
     load();
-  }, []);
+  }, [settings.mockDataEnabled]);
 
   useEffect(() => {
     const persist = async () => {
       try {
+        if (settings.mockDataEnabled) return;
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
       } catch (error) {
         console.warn('Failed to persist applications', error);
       }
     };
     persist();
-  }, [applications]);
+  }, [applications, settings.mockDataEnabled]);
 
   const value = useMemo(() => ({
     applications,
