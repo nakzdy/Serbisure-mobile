@@ -1,100 +1,129 @@
-import { Redirect } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
-import { Theme } from '../../constants/theme';
+import AppModal from '../../components/Modal';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-
-// Mock data matching the "Browse Services" screenshot
-const MOCK_WORKERS = [
-    { id: '1', name: "Juana Dela Cruz", skills: ["Plumbing", "Pipes", "Drainage"], status: "online", reliability: 92, verified: true, tesda: true },
-    { id: '2', name: "Mario Rossi", skills: ["Electrical", "Wiring", "Lighting"], status: "online", reliability: 85, verified: true, tesda: false },
-    { id: '3', name: "Maria Clara", skills: ["Cleaning", "Janitorial"], status: "pending", reliability: 60, verified: false, tesda: true },
-    { id: '4', name: "Roberto G.", skills: ["Carpentry", "Furniture", "Repair"], status: "online", reliability: 95, verified: true, tesda: true },
-    { id: '5', name: "Elena R.", skills: ["Babysitting", "Child Care"], status: "online", reliability: 88, verified: true, tesda: false },
-    { id: '6', name: "Paolo M.", skills: ["Pet Care", "Dog Walking"], status: "pending", reliability: 78, verified: false, tesda: false },
-];
+import { useBookings } from '../../contexts/BookingsContext';
+import { useRequests } from '../../contexts/RequestsContext';
+import { WORKERS } from '../../data/workers';
 
 export default function ServicesScreen() {
     const { user } = useAuth();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+    const params = useLocalSearchParams<{ book?: string }>();
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [bookedWorkerId, setBookedWorkerId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [bookingWorker, setBookingWorker] = useState<typeof WORKERS[0] | null>(null);
+    const [infoModal, setInfoModal] = useState({ visible: false, title: '', message: '' });
+    const { bookings, addBooking } = useBookings();
+    const { addRequest } = useRequests();
     const insets = useSafeAreaInsets();
 
-    const filteredWorkers = selectedCategory === 'All'
-        ? MOCK_WORKERS
-        : MOCK_WORKERS.filter(w => w.skills.some(skill => skill.toLowerCase().includes(selectedCategory.toLowerCase())));
+    const filteredWorkers = useMemo(() => {
+        const matchCategory = (worker: typeof WORKERS[0]) =>
+            selectedCategory === 'All' || worker.skills.some(skill => skill.toLowerCase().includes(selectedCategory.toLowerCase()));
+        const matchSearch = (worker: typeof WORKERS[0]) =>
+            worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            worker.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+        return WORKERS.filter(worker => matchCategory(worker) && matchSearch(worker));
+    }, [selectedCategory, searchQuery]);
 
-    const handleBookService = (workerId: string, workerName: string) => {
-        if (bookedWorkerId === workerId) {
-            Alert.alert('Already Booked', `${workerName} is already in your requests.`);
-            return;
+    useEffect(() => {
+        if (params.book) {
+            const worker = WORKERS.find(w => w.id === params.book);
+            if (worker) {
+                setBookingWorker(worker);
+            }
         }
-        setBookedWorkerId(workerId);
-        Alert.alert('Service Booked', `You have requested ${workerName}. We sent a confirmation email.`);
-    };
+    }, [params.book]);
 
-    const handleSearch = () => {
-        Alert.alert('Search', 'Search by name or skill is coming soon.');
-    };
-
-    const handleViewWorkerDetails = (workerName: string) => {
-        Alert.alert('Worker Details', `Opening profile for ${workerName} (demo placeholder).`);
+    const handleBookService = (workerId: string, workerName: string, skills: string[], reliability: number) => {
+        const alreadyBooked = bookings.some(b => b.workerId === workerId && b.status !== 'Cancelled');
+        if (alreadyBooked) return;
+        const requestId = `req-${Date.now()}`;
+        addRequest({
+            id: requestId,
+            title: skills[0] || 'Service Request',
+            category: skills[0] || 'General',
+            date: new Date().toLocaleString(),
+            est: 'TBD',
+            homeownerName: user?.name || 'Homeowner',
+            status: 'Confirmed',
+        });
+        addBooking({
+            id: `${workerId}-${Date.now()}`,
+            workerId,
+            workerName,
+            homeownerName: user?.name || 'Homeowner',
+            skills,
+            reliability,
+            requestId,
+            serviceType: skills[0] || 'Service Request',
+            serviceDate: new Date().toLocaleString(),
+            estimatedCost: 'TBD',
+            createdAt: new Date().toLocaleString(),
+            status: 'Confirmed',
+        });
+        setBookingWorker(null);
+        setInfoModal({ visible: true, title: 'Booking Confirmed', message: `Your booking with ${workerName} is confirmed and appears in Active Requests.` });
+        router.push('/(tabs)/bookings');
     };
 
     if (user?.role === 'worker') {
         return <Redirect href="/(tabs)/explore" />;
     }
 
-    const renderWorker = ({ item }: { item: typeof MOCK_WORKERS[0] }) => (
-        <TouchableOpacity onPress={() => handleViewWorkerDetails(item.name)} activeOpacity={0.8}>
+    const renderWorker = (item: typeof WORKERS[0]) => (
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/worker/[id]', params: { id: item.id } })} activeOpacity={0.8}>
             <Card style={styles.workerCard}>
                 <View style={styles.workerHeader}>
                     <View style={styles.avatarPlaceholder}>
-                        {/* The screenshot shows a grey generic bust, we will use a muted placeholder with an icon or initials */}
                         <Text style={styles.avatarText}>{item.name[0]}</Text>
                     </View>
-                <View style={styles.workerInfo}>
-                    <Text style={styles.workerName}>{item.name}</Text>
-                    <View style={styles.verifiedRow}>
-                        {item.verified ? (
-                            <Text style={styles.verifiedText}>✔ Verified</Text>
-                        ) : (
-                            <Text style={styles.pendingText}>◷ Pending</Text>
-                        )}
+                    <View style={styles.workerInfo}>
+                        <Text style={styles.workerName}>{item.name}</Text>
+                        <View style={styles.verifiedRow}>
+                            {item.verified ? (
+                                <Text style={styles.verifiedText}>Verified</Text>
+                            ) : (
+                                <Text style={styles.pendingText}>Pending</Text>
+                            )}
+                        </View>
+                    </View>
+                    <View style={styles.reliabilityBadge}>
+                        <Text style={styles.reliabilityScore}>{item.reliability}%</Text>
+                        <Text style={styles.reliabilityLabel}>RELIABILITY</Text>
                     </View>
                 </View>
-                <View style={styles.reliabilityBadge}>
-                    <Text style={styles.reliabilityScore}>{item.reliability}%</Text>
-                    <Text style={styles.reliabilityLabel}>RELIABILITY</Text>
+
+                <View style={styles.skillsRow}>
+                    {item.skills.map(skill => (
+                        <View key={skill} style={styles.skillBadge}>
+                            <Text style={styles.skillText}>{skill}</Text>
+                        </View>
+                    ))}
                 </View>
-            </View>
 
-            <View style={styles.skillsRow}>
-                {item.skills.map(skill => (
-                    <View key={skill} style={styles.skillBadge}>
-                        <Text style={styles.skillText}>{skill}</Text>
-                    </View>
-                ))}
-            </View>
+                <View style={styles.tesdaRow}>
+                    {item.tesda ? (
+                        <Text style={styles.tesdaText}>TESDA Certified</Text>
+                    ) : (
+                        <Text style={styles.noTesdaText}>No TESDA Certificate</Text>
+                    )}
+                </View>
 
-            <View style={styles.tesdaRow}>
-                {item.tesda ? (
-                    <Text style={styles.tesdaText}>🏅 TESDA Certified</Text>
-                ) : (
-                    <Text style={styles.noTesdaText}>— No TESDA Certificate</Text>
-                )}
-            </View>
-
-            <Button
-                title={bookedWorkerId === item.id ? 'Booked' : 'Book Service'}
-                onPress={() => handleBookService(item.id, item.name)}
-                style={styles.bookButton}
-                disabled={bookedWorkerId === item.id}
-            />
-        </Card>
+                <Button
+                    title={bookings.some(b => b.workerId === item.id && b.status !== 'Cancelled') ? 'Booked' : 'Book Service'}
+                    onPress={() => setBookingWorker(item)}
+                    style={styles.bookButton}
+                    disabled={bookings.some(b => b.workerId === item.id && b.status !== 'Cancelled')}
+                />
+            </Card>
         </TouchableOpacity>
     );
 
@@ -103,16 +132,47 @@ export default function ServicesScreen() {
             style={styles.container}
             contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: 100 }]}
         >
+            <AppModal
+                visible={infoModal.visible}
+                title={infoModal.title}
+                message={infoModal.message}
+                onClose={() => setInfoModal(prev => ({ ...prev, visible: false }))}
+            />
+            <AppModal
+                visible={!!bookingWorker}
+                title="Confirm Booking"
+                onClose={() => setBookingWorker(null)}
+                actions={[
+                    { label: 'Confirm', type: 'primary', onPress: () => bookingWorker && handleBookService(bookingWorker.id, bookingWorker.name, bookingWorker.skills, bookingWorker.reliability) },
+                    { label: 'Cancel', type: 'secondary' },
+                ]}
+            >
+                {bookingWorker && (
+                    <View style={styles.modalBlock}>
+                        <Text style={styles.modalTitle}>Book {bookingWorker.name}</Text>
+                        <Text style={styles.modalLine}>Service types: {bookingWorker.skills.join(', ')}</Text>
+                        <Text style={styles.modalLine}>Reliability score: {bookingWorker.reliability}%</Text>
+                        <Text style={styles.modalLine}>We will confirm your schedule after the worker accepts.</Text>
+                    </View>
+                )}
+            </AppModal>
+
             <View style={styles.header}>
                 <Text style={styles.title}>Browse Services</Text>
                 <Text style={styles.subtitle}>Find and book verified service providers for your home</Text>
+                <View style={styles.headerActions}>
+                    <Button title="View Bookings" type="outline" onPress={() => router.push('/(tabs)/bookings')} />
+                </View>
             </View>
 
             <View style={styles.searchSection}>
-                {/* We will mock a search bar look alike the screenshot */}
-                <TouchableOpacity style={styles.searchBar} onPress={handleSearch} activeOpacity={0.7}>
-                    <Text style={styles.searchPlaceholder}>Search by name or skill...</Text>
-                </TouchableOpacity>
+                <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search by name or skill..."
+                    placeholderTextColor={colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
             </View>
 
             <View style={styles.section}>
@@ -133,7 +193,7 @@ export default function ServicesScreen() {
                 {filteredWorkers.length > 0 ? (
                     filteredWorkers.map(worker => (
                         <View key={worker.id} style={styles.gridItem}>
-                            {renderWorker({ item: worker })}
+                            {renderWorker(worker)}
                         </View>
                     ))
                 ) : (
@@ -144,10 +204,10 @@ export default function ServicesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('../../constants/theme').DarkColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Theme.colors.bg1,
+        backgroundColor: colors.bg1,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -155,29 +215,30 @@ const styles = StyleSheet.create({
     header: {
         marginBottom: 24,
     },
+    headerActions: {
+        marginTop: 12,
+        maxWidth: 180,
+    },
     title: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 28,
         fontWeight: '700',
         marginBottom: 8,
     },
     subtitle: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 14,
     },
     searchSection: {
         marginBottom: 20,
     },
     searchBar: {
-        backgroundColor: Theme.colors.inputBg,
+        backgroundColor: colors.inputBg,
         borderWidth: 1,
-        borderColor: Theme.colors.inputBorder,
+        borderColor: colors.inputBorder,
         borderRadius: 8,
         padding: 14,
-    },
-    searchPlaceholder: {
-        color: Theme.colors.muted,
-        fontSize: 14,
+        color: colors.text,
     },
     section: {
         marginBottom: 24,
@@ -189,25 +250,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 8,
-        backgroundColor: Theme.colors.cardBg,
+        backgroundColor: colors.cardBg,
         marginRight: 8,
         borderWidth: 1,
-        borderColor: Theme.colors.cardBorder,
+        borderColor: colors.cardBorder,
     },
     categoryActive: {
-        backgroundColor: Theme.colors.accent,
-        borderColor: Theme.colors.accent,
+        backgroundColor: colors.accent,
+        borderColor: colors.accent,
     },
     categoryText: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontWeight: '600',
         fontSize: 13,
     },
     categoryActiveText: {
-        color: '#FFF',
+        color: colors.textOnAccent,
     },
     gridSection: {
-        // In mobile, we just stack them vertically instead of a real grid
         marginBottom: 40,
     },
     gridItem: {
@@ -226,13 +286,13 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: Theme.colors.cardBgSolid, // Muted grey like the screenshot
+        backgroundColor: colors.cardBgSolid,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
     avatarText: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 20,
         fontWeight: '700',
     },
@@ -240,7 +300,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     workerName: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
@@ -252,12 +312,12 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     verifiedText: {
-        color: Theme.colors.accent,
+        color: colors.accent,
         fontSize: 12,
         fontWeight: '600',
     },
     pendingText: {
-        color: Theme.colors.muted,
+        color: colors.muted,
         fontSize: 12,
         fontWeight: '600',
     },
@@ -265,12 +325,12 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     reliabilityScore: {
-        color: Theme.colors.accent,
+        color: colors.accent,
         fontSize: 22,
         fontWeight: '700',
     },
     reliabilityLabel: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 8,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -282,15 +342,15 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     skillBadge: {
-        backgroundColor: 'rgba(99, 140, 255, 0.1)',
+        backgroundColor: colors.statusPending,
         borderWidth: 1,
-        borderColor: 'rgba(99, 140, 255, 0.2)',
+        borderColor: colors.statusPendingBorder,
         borderRadius: 16,
         paddingHorizontal: 12,
         paddingVertical: 4,
     },
     skillText: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 11,
         fontWeight: '500',
     },
@@ -298,21 +358,33 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     tesdaText: {
-        color: Theme.colors.accent,
+        color: colors.accent,
         fontSize: 12,
         fontWeight: '600',
     },
     noTesdaText: {
-        color: Theme.colors.muted,
+        color: colors.muted,
         fontSize: 12,
     },
     bookButton: {
         width: '100%',
     },
     noResults: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         paddingVertical: 32,
         fontSize: 14,
-    }
+    },
+    modalBlock: {
+        gap: 8,
+    },
+    modalTitle: {
+        color: colors.text,
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    modalLine: {
+        color: colors.textMuted,
+        fontSize: 13,
+    },
 });

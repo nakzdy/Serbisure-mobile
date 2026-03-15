@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Theme } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 // --- Badge Component ---
 interface BadgeProps {
@@ -9,18 +9,22 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ text, type = 'primary' }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     return (
         <View style={[
             styles.badge,
             type === 'primary' && styles.badge_primary,
             type === 'success' && styles.badge_success,
-            type === 'pending' && styles.badge_pending
+            type === 'pending' && styles.badge_pending,
+            type === 'outline' && styles.badge_outline
         ]}>
             <Text style={[
                 styles.badgeText,
                 type === 'primary' && styles.badgeText_primary,
                 type === 'success' && styles.badgeText_success,
-                type === 'pending' && styles.badgeText_pending
+                type === 'pending' && styles.badgeText_pending,
+                type === 'outline' && styles.badgeText_outline
             ]}>{text}</Text>
         </View>
     );
@@ -32,13 +36,21 @@ interface StatusProps {
 }
 
 export const StatusIndicator: React.FC<StatusProps> = ({ status }) => (
-    <View style={styles.statusContainer}>
-        <View style={[styles.statusDot, styles[`dot_${status}` as keyof typeof styles] as any]} />
-        <Text style={styles.statusText}>{status.charAt(0).toUpperCase() + status.slice(1)}</Text>
-    </View>
+    <StatusIndicatorInner status={status} />
 );
 
-const styles = StyleSheet.create({
+const StatusIndicatorInner: React.FC<StatusProps> = ({ status }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+    return (
+        <View style={styles.statusContainer}>
+            <View style={[styles.statusDot, styles[`dot_${status}` as keyof typeof styles] as any]} />
+            <Text style={styles.statusText}>{status.charAt(0).toUpperCase() + status.slice(1)}</Text>
+        </View>
+    );
+};
+
+const createStyles = (colors: typeof import('../constants/theme').DarkColors) => StyleSheet.create({
     badge: {
         paddingHorizontal: 14, // Match .system-status-badge padding 6px 14px
         paddingVertical: 6,
@@ -52,25 +64,25 @@ const styles = StyleSheet.create({
     },
     badge_outline: {
         backgroundColor: 'transparent',
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: colors.cardBorder,
     },
     badge_success: {
         backgroundColor: 'rgba(76, 209, 55, 0.15)',
         borderColor: 'rgba(76, 209, 55, 0.25)',
     },
     badge_pending: {
-        backgroundColor: Theme.colors.statusPending,
+        backgroundColor: colors.statusPending,
         // Using accent as default fallback for pending border since statusPendingBorder isn't in Theme yet
-        borderColor: Theme.colors.accent,
+        borderColor: colors.accent,
     },
     badgeText: {
         fontSize: 12, // Match .system-status-badge
         fontWeight: '600',
     },
-    badgeText_primary: { color: Theme.colors.accent },
-    badgeText_outline: { color: Theme.colors.textMuted },
-    badgeText_success: { color: Theme.colors.success },
-    badgeText_pending: { color: Theme.colors.statusPendingText },
+    badgeText_primary: { color: colors.accent },
+    badgeText_outline: { color: colors.textMuted },
+    badgeText_success: { color: colors.success },
+    badgeText_pending: { color: colors.statusPendingText },
 
     statusContainer: {
         flexDirection: 'row',
@@ -82,11 +94,11 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         marginRight: 6,
     },
-    dot_online: { backgroundColor: Theme.colors.success },
-    dot_offline: { backgroundColor: Theme.colors.muted },
-    dot_pending: { backgroundColor: Theme.colors.statusPendingText },
+    dot_online: { backgroundColor: colors.success },
+    dot_offline: { backgroundColor: colors.muted },
+    dot_pending: { backgroundColor: colors.statusPendingText },
     statusText: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 13,
     }
 });

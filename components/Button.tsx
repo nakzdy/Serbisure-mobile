@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { Theme } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ButtonProps {
     title: string;
@@ -22,6 +22,8 @@ export const Button: React.FC<ButtonProps> = ({
     textStyle,
     disabled
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const isPrimary = type === 'primary';
 
     const touchableStyle = [
@@ -38,11 +40,17 @@ export const Button: React.FC<ButtonProps> = ({
         type === 'outline' && styles.buttonOutline,
     ];
 
+    const textColor =
+        type === 'outline'
+            ? colors.accent
+            : type === 'secondary'
+                ? colors.text
+                : colors.textOnAccent;
     const content = (
         <Text style={[
             styles.buttonText,
             size === 'sm' && styles.buttonTextSmall,
-            type === 'outline' && { color: Theme.colors.accent },
+            { color: textColor },
             textStyle
         ]}>
             {title}
@@ -58,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
         >
             {isPrimary ? (
                 <LinearGradient
-                    colors={[Theme.colors.accent, Theme.colors.accentDark]}
+                    colors={[colors.accent, colors.accentDark]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={innerStyles}
@@ -74,7 +82,7 @@ export const Button: React.FC<ButtonProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('../constants/theme').DarkColors) => StyleSheet.create({
     touchable: {
         width: '100%',
         borderRadius: 12,
@@ -102,17 +110,17 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     buttonSecondary: {
-        backgroundColor: Theme.colors.cardBgSolid,
+        backgroundColor: colors.cardBgSolid,
         borderWidth: 1,
-        borderColor: Theme.colors.cardBorder,
+        borderColor: colors.cardBorder,
     },
     buttonOutline: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: Theme.colors.accent,
+        borderColor: colors.accent,
     },
     buttonText: {
-        color: '#FFFFFF',
+        color: colors.textOnAccent,
         fontSize: 15,
         fontWeight: '600',
     },

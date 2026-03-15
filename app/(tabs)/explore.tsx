@@ -1,11 +1,16 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
-import { Theme } from '../../constants/theme';
+import AppModal from '../../components/Modal';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBookings } from '../../contexts/BookingsContext';
+import { useRequests } from '../../contexts/RequestsContext';
+import { useApplications } from '../../contexts/ApplicationsContext';
+import { REVIEWS } from '../../data/reviews';
 
 // Mock Data
 const MOCK_STATS = [
@@ -15,46 +20,28 @@ const MOCK_STATS = [
   { id: '4', label: 'Response', value: '98%' },
 ];
 
-const MOCK_INCOMING = [
-  {
-    id: '1',
-    category: 'Carpentry',
-    title: 'Kitchen Cabinet Repair',
-    when: 'Tomorrow, 9:00 AM (Standard)',
-    where: '4.5 km away',
-    client: 'Roberto G.',
-    location: 'Don Antonio, QC'
-  }
-];
-
-const MOCK_REVIEWS = [
-  { id: '1', name: 'Alex M.', rating: 5, time: '2 days ago', body: '"Very professional and fixed the leak quickly!"' },
-  { id: '2', name: 'David L.', rating: 5, time: '1 week ago', body: '"Good work, but arrived 10 mins late."' },
-];
-
-const MOCK_ACTIVE = [
-  { id: '1', category: 'Carpentry', title: 'Custom Bookshelf Build' }
-];
-
 export default function WorkerDashboard() {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const { bookings } = useBookings();
+  const { requests } = useRequests();
+  const { applications } = useApplications();
   const [isOnline, setIsOnline] = useState(true);
-  const [acceptedJobs, setAcceptedJobs] = useState<string[]>([]);
+  const [modal, setModal] = useState<{ visible: boolean; title: string; message: string }>({ visible: false, title: '', message: '' });
   const insets = useSafeAreaInsets();
 
-  const handleAcceptJob = (id: string) => {
-    if (acceptedJobs.includes(id)) {
-      Alert.alert('Notice', 'You already accepted this request.');
-      return;
-    }
-    setAcceptedJobs(prev => [...prev, id]);
-    Alert.alert('Job Accepted', 'Great job! You have scheduled this request.');
-  };
+  const openModal = (title: string, message: string) => setModal({ visible: true, title, message });
+  const closeModal = () => setModal(prev => ({ ...prev, visible: false }));
 
-  const handleDeclineJob = (id: string) => {
-    Alert.alert('Request Declined', 'This request was declined. You can choose another job.');
-    setAcceptedJobs(prev => prev.filter(item => item !== id));
-  };
+  const workerName = user?.name || 'Worker';
+  const openRequests = requests.filter(r => r.status === 'Open');
+  const appliedRequestIds = applications.filter(a => a.workerName === workerName).map(a => a.requestId);
+  const incomingCount = openRequests.filter(r => !appliedRequestIds.includes(r.id)).length;
+  const hasMatch = workerName ? bookings.some(b => b.workerName === workerName) : false;
+  const assignedBookings = hasMatch ? bookings.filter(b => b.workerName === workerName) : bookings;
+  const activeJobsCount = assignedBookings.filter(b => b.status === 'Confirmed').length;
+  const completedCount = assignedBookings.filter(b => b.status === 'Completed').length;
 
   if (user?.role === 'homeowner') {
     return <Redirect href="/(tabs)" />;
@@ -62,18 +49,23 @@ export default function WorkerDashboard() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 40 }}>
-      {/* Replicating .dashboard-welcome for workers */}
+      <AppModal
+        visible={modal.visible}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+      />
       <View style={styles.headerArea}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{user?.name?.split(' ')[0] || 'Gerald'}!</Text></Text>
           <Text style={styles.greetingSub}>Here's what's happening today.</Text>
         </View>
         <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>Online & Available</Text>
+          <Text style={styles.toggleText}>{isOnline ? 'Online & Available' : 'Offline'}</Text>
           <Switch
             value={isOnline}
             onValueChange={setIsOnline}
-            trackColor={{ false: '#4A5568', true: '#4C6EF5' }}
+            trackColor={{ false: colors.cardBorder, true: colors.accent }}
             thumbColor="#FFF"
           />
         </View>
@@ -94,80 +86,58 @@ export default function WorkerDashboard() {
       </ScrollView>
 
       <View style={styles.mainGrid}>
-        {/* Left Column Equivalent */}
         <View style={styles.col}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Incoming Requests (1)</Text>
-            <Text style={styles.viewLink} onPress={() => Alert.alert('History', 'Redirecting to your completed jobs.')}>View History</Text>
+            <Text style={styles.sectionTitle}>Workflow Overview</Text>
           </View>
+          <Text style={styles.sectionSubtitle}>
+            Track new requests, active jobs, and your applications in one place.
+          </Text>
 
-          {MOCK_INCOMING.map(req => (
-            <Card key={req.id} style={styles.reqCard}>
-              <View style={styles.reqBadge}><Text style={styles.reqBadgeText}>{req.category}</Text></View>
-              <Text style={styles.reqTitle}>{req.title}</Text>
-
-              <View style={styles.reqDetails}>
-                <Text style={styles.reqDetailRow}>📅  When: {req.when}</Text>
-                <Text style={styles.reqDetailRow}>📍  Where: {req.where}</Text>
-              </View>
-
-              <View style={styles.clientRow}>
-                <View style={styles.clientAvatar}><Text style={styles.clientAvatarText}>{req.client[0]}</Text></View>
-                <View>
-                  <Text style={styles.clientName}>{req.client}</Text>
-                  <Text style={styles.clientLoc}>{req.location}</Text>
-                </View>
-              </View>
-
-              <View style={styles.actionRow}>
-                <Text
-                  style={styles.declineText}
-                  onPress={() => handleDeclineJob(req.id)}
-                >
-                  Decline
-                </Text>
-                <Button
-                  title={acceptedJobs.includes(req.id) ? 'Accepted' : 'Accept Job'}
-                  size="sm"
-                  onPress={() => handleAcceptJob(req.id)}
-                  style={styles.acceptBtn}
-                  disabled={acceptedJobs.includes(req.id)}
-                />
-              </View>
+          <View style={styles.overviewGrid}>
+            <Card style={styles.overviewCard}>
+              <Text style={styles.overviewLabel}>Incoming Requests</Text>
+              <Text style={styles.overviewValue}>{incomingCount}</Text>
+              <Text style={styles.overviewHint}>Apply from the Bookings tab.</Text>
+              <Button title="View Requests" size="sm" onPress={() => router.push('/(tabs)/bookings')} />
             </Card>
-          ))}
-
-          <View style={styles.activeSection}>
-            <Text style={styles.sectionTitle}>Active Jobs (1)</Text>
-            {MOCK_ACTIVE.map(job => (
-              <Card key={job.id} style={styles.activeCard}>
-                <View style={styles.activeIndicator} />
-                <View style={styles.activeContent}>
-                  <Text style={styles.activeCat}>{job.category}</Text>
-                  <Text style={styles.activeTitle}>{job.title}</Text>
-                </View>
-              </Card>
-            ))}
+            <Card style={styles.overviewCard}>
+              <Text style={styles.overviewLabel}>Active Jobs</Text>
+              <Text style={styles.overviewValue}>{activeJobsCount}</Text>
+              <Text style={styles.overviewHint}>Confirmed work in progress.</Text>
+              <Button title="Manage Jobs" size="sm" onPress={() => router.push('/(tabs)/bookings')} />
+            </Card>
+            <Card style={styles.overviewCard}>
+              <Text style={styles.overviewLabel}>My Applications</Text>
+              <Text style={styles.overviewValue}>{appliedRequestIds.length}</Text>
+              <Text style={styles.overviewHint}>Waiting for homeowner response.</Text>
+              <Button title="Review Applications" size="sm" onPress={() => router.push('/(tabs)/applications')} />
+            </Card>
+            <Card style={styles.overviewCard}>
+              <Text style={styles.overviewLabel}>Completed Jobs</Text>
+              <Text style={styles.overviewValue}>{completedCount}</Text>
+              <Text style={styles.overviewHint}>See full history anytime.</Text>
+              <Button title="View History" size="sm" onPress={() => router.push('/(tabs)/history')} />
+            </Card>
           </View>
         </View>
 
-        {/* Right Column Equivalent */}
         <View style={styles.col}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Reviews</Text>
-            <Text style={styles.viewLink} onPress={() => Alert.alert('See All', 'Opening all reviews in a new view.')}>See All</Text>
+            <Text style={styles.viewLink} onPress={() => router.push('/(tabs)/reviews')}>See All</Text>
           </View>
 
           <Card style={styles.reviewsCard}>
-            {MOCK_REVIEWS.map((review, i) => (
+            {(REVIEWS || []).slice(0, 2).map((review, i) => (
               <View key={review.id}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewName}>{review.name}</Text>
-                  <Text style={styles.reviewStars}>★★★★★</Text>
+                  <Text style={styles.reviewStars}>*****</Text>
                 </View>
                 <Text style={styles.reviewBody}>{review.body}</Text>
                 <Text style={styles.reviewTime}>{review.time}</Text>
-                {i < MOCK_REVIEWS.length - 1 && <View style={styles.reviewDivider} />}
+                {i < (REVIEWS || []).slice(0, 2).length - 1 && <View style={styles.reviewDivider} />}
               </View>
             ))}
           </Card>
@@ -177,28 +147,28 @@ export default function WorkerDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('../../constants/theme').DarkColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.bg1,
+    backgroundColor: colors.bg1,
     paddingHorizontal: 20,
   },
   headerArea: {
-    flexDirection: 'column', // Stacking for mobile 
+    flexDirection: 'column',
     justifyContent: 'space-between',
     gap: 16,
     marginBottom: 24,
-    backgroundColor: Theme.colors.cardBg,
+    backgroundColor: colors.cardBg,
     padding: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
+    borderColor: colors.cardBorder,
   },
   headerLeft: {
     flex: 1,
   },
   greeting: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 26,
     fontWeight: '600',
     flexWrap: 'wrap',
@@ -208,7 +178,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   greetingSub: {
-    color: Theme.colors.textMuted,
+    color: colors.textMuted,
     fontSize: 15,
     marginTop: 6,
     lineHeight: 22,
@@ -219,7 +189,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   toggleText: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
     marginRight: 12,
@@ -233,13 +203,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    width: 140, // Fixed width for horizontal scrolling
+    width: 140,
     padding: 20,
     paddingVertical: 24,
     borderRadius: 12,
   },
   statLabel: {
-    color: Theme.colors.textMuted,
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 12,
@@ -249,12 +219,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   statVal: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 28,
     fontWeight: '700',
   },
   statSuffix: {
-    color: Theme.colors.textMuted,
+    color: colors.textMuted,
     fontSize: 14,
     marginLeft: 4,
   },
@@ -273,121 +243,42 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '700',
   },
-  viewLink: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  reqCard: {
-    padding: 28,
-  },
-  reqBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  reqBadgeText: {
-    color: Theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  reqTitle: {
-    color: '#FFF',
-    fontSize: 19,
-    fontWeight: '700',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    letterSpacing: -0.3,
-  },
-  reqDetails: {
-    marginBottom: 24,
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  reqDetailRow: {
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-    flexWrap: 'wrap',
-  },
-  clientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
-  clientAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Theme.colors.inputBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  clientAvatarText: {
-    color: '#FFF',
-    fontWeight: '700',
-  },
-  clientName: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  clientLoc: {
-    color: Theme.colors.textMuted,
+  sectionSubtitle: {
+    color: colors.textMuted,
     fontSize: 13,
+    marginBottom: 16,
   },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+  viewLink: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  overviewGrid: {
     gap: 16,
   },
-  declineText: {
-    color: Theme.colors.textMuted,
-    fontSize: 15,
-    fontWeight: '600',
-    padding: 10,
-  },
-  acceptBtn: {
-    flex: 1,
-    minWidth: 100,
-  },
-  activeSection: {
-    marginTop: 24,
-  },
-  activeCard: {
-    flexDirection: 'row',
-    padding: 0,
-    overflow: 'hidden',
-  },
-  activeIndicator: {
-    width: 4,
-    backgroundColor: '#F6AD55', // Orange indicator like in the screenshot
-  },
-  activeContent: {
+  overviewCard: {
     padding: 20,
+    gap: 8,
   },
-  activeCat: {
-    color: Theme.colors.textMuted,
+  overviewLabel: {
+    color: colors.textMuted,
     fontSize: 12,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  activeTitle: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
+  overviewValue: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  overviewHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: 6,
   },
   reviewsCard: {
     padding: 24,
@@ -399,29 +290,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reviewName: {
-    color: '#FFF',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
   reviewStars: {
-    color: '#F6AD55', // Orange stars
+    color: '#F6AD55',
     fontSize: 14,
     letterSpacing: 2,
   },
   reviewBody: {
-    color: Theme.colors.textMuted,
+    color: colors.textMuted,
     fontSize: 14,
     fontStyle: 'italic',
     marginBottom: 8,
     lineHeight: 20,
   },
   reviewTime: {
-    color: 'rgba(255,255,255,0.3)',
+    color: colors.muted,
     fontSize: 12,
   },
   reviewDivider: {
     height: 1,
-    backgroundColor: Theme.colors.cardBorder,
+    backgroundColor: colors.cardBorder,
     marginVertical: 16,
-  }
+  },
+  emptyCard: {
+    padding: 20,
+    marginBottom: 16,
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
 });

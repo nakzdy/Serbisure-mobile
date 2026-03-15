@@ -1,26 +1,38 @@
 import { signOut } from 'firebase/auth';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../components/Button';
 import { Card, Input } from '../../../components/CommonUI';
+import AppModal from '../../../components/Modal';
 import { auth } from '../../../constants/firebase';
-import { Theme } from '../../../constants/theme';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { useSettings } from '../../../contexts/SettingsContext';
 
 export default function SettingsScreen() {
     const { user } = useAuth();
-    const [darkMode, setDarkMode] = useState(true);
+    const { colors, darkMode, setDarkMode } = useTheme();
+    const { settings, setLanguage, setAvatarColor } = useSettings();
+    const styles = createStyles(colors);
     const [newPassword, setNewPassword] = useState('');
-    const [language, setLanguage] = useState('English');
+    const [modal, setModal] = useState({ visible: false, title: '', message: '' });
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
     const insets = useSafeAreaInsets();
 
+    const openModal = (title: string, message: string) => {
+        setModal({ visible: true, title, message });
+    };
+
+    const closeModal = () => setModal(prev => ({ ...prev, visible: false }));
+
     const handleChangePicture = () => {
-        Alert.alert('Change Picture', 'This feature is coming soon (Image picker integration).');
+        setShowAvatarModal(true);
     };
 
     const handleSaveChanges = () => {
-        Alert.alert('Settings Saved', `Dark mode: ${darkMode ? 'Enabled' : 'Disabled'}\nLanguage: ${language}`);
+        openModal('Settings Saved', `Dark mode: ${darkMode ? 'Enabled' : 'Disabled'}\nLanguage: ${settings.language}`);
     };
 
     const handleLogout = async () => {
@@ -33,6 +45,41 @@ export default function SettingsScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 100 }}>
+            <AppModal
+                visible={modal.visible}
+                title={modal.title}
+                message={modal.message}
+                onClose={closeModal}
+            />
+            <AppModal
+                visible={showLanguageModal}
+                title="Select Language"
+                onClose={() => setShowLanguageModal(false)}
+                actions={[
+                    { label: 'English', type: 'primary', onPress: () => setLanguage('English') },
+                    { label: 'Filipino', type: 'secondary', onPress: () => setLanguage('Filipino') },
+                ]}
+            >
+                <Text style={styles.modalText}>Choose the language you want to use across the app.</Text>
+            </AppModal>
+            <AppModal
+                visible={showAvatarModal}
+                title="Choose Avatar Color"
+                onClose={() => setShowAvatarModal(false)}
+                actions={[{ label: 'Done', type: 'primary' }]}
+            >
+                <View style={styles.avatarOptions}>
+                    {['#638cff', '#4cd137', '#f39c12', '#e74c3c', '#9b59b6'].map(color => (
+                        <TouchableOpacity
+                            key={color}
+                            style={[styles.avatarOption, { backgroundColor: color, borderColor: settings.avatarColor === color ? '#FFF' : 'transparent' }]}
+                            onPress={() => setAvatarColor(color)}
+                        />
+                    ))}
+                </View>
+                <Text style={styles.modalText}>Selected color will be applied to your profile avatar.</Text>
+            </AppModal>
+
             <View style={styles.header}>
                 <Text style={styles.title}>Settings</Text>
                 <Text style={styles.subtitle}>Update your account and app preferences</Text>
@@ -42,7 +89,7 @@ export default function SettingsScreen() {
                 <Text style={styles.sectionTitle}>Profile Picture</Text>
                 <Card style={styles.settingsCard}>
                     <View style={styles.profileRow}>
-                        <View style={styles.avatar}>
+                        <View style={[styles.avatar, { backgroundColor: settings.avatarColor || colors.accent }]}>
                             <Text style={styles.avatarText}>{user?.name?.[0] || 'U'}</Text>
                         </View>
                         <Button title="Change Picture" size="sm" onPress={handleChangePicture} style={styles.changePicBtn} />
@@ -56,7 +103,7 @@ export default function SettingsScreen() {
                     <Text style={styles.label}>EMAIL ADDRESS</Text>
                     <View style={styles.inputWrapper}>
                         <Input
-                            value={user?.email || "user@example.com"}
+                            value={user?.email || 'user@example.com'}
                             onChangeText={() => { }}
                             editable={false}
                         />
@@ -74,12 +121,8 @@ export default function SettingsScreen() {
 
                     <Text style={styles.label}>LANGUAGE</Text>
                     <View style={styles.inputWrapper}>
-                        <TouchableOpacity onPress={() => {
-                            const next = language === 'English' ? 'Filipino' : 'English';
-                            setLanguage(next);
-                            Alert.alert('Language changed', `Selected: ${next}`);
-                        }} style={styles.langSelect}>
-                            <Text style={styles.langText}>{language} ˅</Text>
+                        <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.langSelect}>
+                            <Text style={styles.langText}>{settings.language} ▾</Text>
                         </TouchableOpacity>
                     </View>
                 </Card>
@@ -91,11 +134,11 @@ export default function SettingsScreen() {
                     <View style={styles.prefRow}>
                         <Text style={styles.prefLabel}>Appearance</Text>
                         <View style={styles.toggleGroup}>
-                            <Text style={styles.toggleLabel}>Dark Mode</Text>
+                            <Text style={styles.toggleLabel}>{darkMode ? 'Dark Mode' : 'Light Mode'}</Text>
                             <Switch
                                 value={darkMode}
                                 onValueChange={setDarkMode}
-                                trackColor={{ false: '#4A5568', true: Theme.colors.accent }}
+                                trackColor={{ false: colors.cardBorder, true: colors.accent }}
                                 thumbColor={'#FFF'}
                             />
                         </View>
@@ -103,9 +146,9 @@ export default function SettingsScreen() {
                     <View style={styles.prefDivider} />
                     <View style={styles.prefRow}>
                         <Text style={styles.prefLabel}>Language</Text>
-                        <View style={styles.langSelect}>
-                            <Text style={styles.langText}>English   ˅</Text>
-                        </View>
+                        <TouchableOpacity style={styles.langSelect} onPress={() => setShowLanguageModal(true)}>
+                            <Text style={styles.langText}>{settings.language} ▾</Text>
+                        </TouchableOpacity>
                     </View>
                 </Card>
             </View>
@@ -117,10 +160,10 @@ export default function SettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('../../../constants/theme').DarkColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Theme.colors.bg1,
+        backgroundColor: colors.bg1,
         paddingHorizontal: 20,
     },
     header: {
@@ -129,18 +172,18 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '700',
-        color: Theme.colors.text,
+        color: colors.text,
         marginBottom: 6,
     },
     subtitle: {
         fontSize: 14,
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
     },
     section: {
         marginBottom: 24,
     },
     sectionTitle: {
-        color: '#FFF',
+        color: colors.text,
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 12,
@@ -156,7 +199,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: Theme.colors.accent,
+        backgroundColor: colors.accent,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 24,
@@ -170,7 +213,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     label: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 1,
@@ -186,7 +229,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     prefLabel: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 15,
         fontWeight: '500',
     },
@@ -196,24 +239,24 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     toggleLabel: {
-        color: Theme.colors.accent,
+        color: colors.accent,
         fontSize: 13,
     },
     langSelect: {
-        backgroundColor: Theme.colors.inputBg,
+        backgroundColor: colors.inputBg,
         borderWidth: 1,
-        borderColor: Theme.colors.inputBorder,
+        borderColor: colors.inputBorder,
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 8,
     },
     langText: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 13,
     },
     prefDivider: {
         height: 1,
-        backgroundColor: Theme.colors.cardBorder,
+        backgroundColor: colors.cardBorder,
         marginVertical: 4,
     },
     actionSection: {
@@ -228,7 +271,22 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     logoutText: {
-        color: '#FC8181', // subtle red for logout
+        color: colors.danger,
         fontWeight: '700',
-    }
+    },
+    modalText: {
+        color: colors.textMuted,
+        fontSize: 13,
+    },
+    avatarOptions: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 12,
+    },
+    avatarOption: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2,
+    },
 });

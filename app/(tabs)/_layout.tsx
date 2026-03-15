@@ -1,27 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Theme } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function TabLayout() {
   const { user } = useAuth();
   const isWorker = user?.role === 'worker';
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Theme.colors.accent,
-        tabBarInactiveTintColor: Theme.colors.muted,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
-          backgroundColor: Theme.colors.navBg,
-          borderTopColor: Theme.colors.cardBorder,
+          backgroundColor: colors.navBg,
+          borderTopColor: colors.cardBorder,
         },
         headerStyle: {
-          backgroundColor: Theme.colors.navBg,
+          backgroundColor: colors.navBg,
         },
         headerTitleStyle: {
-          color: Theme.colors.text,
+          color: colors.text,
           fontWeight: '700',
         },
         headerShown: true,
@@ -54,6 +55,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bookings/index"
+        options={{
+          title: 'Bookings',
+          href: '/bookings',
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="calendar" color={color} />,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="applications/index"
+        options={{
+          title: 'Applications',
+          href: isWorker ? '/applications' : null,
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="clipboard" color={color} />,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="history/index"
         options={{
           title: 'History',
@@ -66,6 +85,22 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => <Ionicons size={24} name="settings" color={color} />,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="reviews/index"
+        options={{
+          title: 'Reviews',
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="worker/[id]"
+        options={{
+          title: 'Worker Profile',
+          href: null,
           headerShown: false,
         }}
       />

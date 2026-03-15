@@ -1,19 +1,31 @@
 import { router } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card, Input } from '../../components/CommonUI';
+import AppModal from '../../components/Modal';
 import { db } from '../../constants/firebase';
-import { Theme } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function OnboardingScreen() {
     const { user } = useAuth();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [step, setStep] = useState(1);
     const [skills, setSkills] = useState(user?.skills || '');
     const [bio, setBio] = useState('');
     const [loading, setLoading] = useState(false);
+    const [modal, setModal] = useState({ visible: false, title: '', message: '' });
+
+    const openModal = (title: string, message: string) => {
+        setModal({ visible: true, title, message });
+    };
+
+    const closeModal = () => {
+        setModal(prev => ({ ...prev, visible: false }));
+    };
 
     const handleComplete = async () => {
         setLoading(true);
@@ -28,10 +40,10 @@ export default function OnboardingScreen() {
                     bio
                 }
             });
-            Alert.alert('Success', 'Onboarding completed!');
+            openModal('Success', 'Onboarding completed!');
             router.replace('/(tabs)/explore');
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            openModal('Error', error.message);
         } finally {
             setLoading(false);
         }
@@ -39,6 +51,12 @@ export default function OnboardingScreen() {
 
     return (
         <ScrollView style={styles.container}>
+            <AppModal
+                visible={modal.visible}
+                title={modal.title}
+                message={modal.message}
+                onClose={closeModal}
+            />
             <View style={styles.header}>
                 <Text style={styles.title}>Worker Onboarding</Text>
                 <Text style={styles.subtitle}>Step {step} of 2</Text>
@@ -65,7 +83,7 @@ export default function OnboardingScreen() {
                             multiline
                             numberOfLines={4}
                             placeholder="Your bio..."
-                            placeholderTextColor="rgba(255,255,255,0.3)"
+                            placeholderTextColor={colors.textMuted}
                             value={bio}
                             onChangeText={setBio}
                         />
@@ -80,10 +98,10 @@ export default function OnboardingScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('../../constants/theme').DarkColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Theme.colors.bg1,
+        backgroundColor: colors.bg1,
         padding: 20,
     },
     header: {
@@ -91,12 +109,12 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     title: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 28,
         fontWeight: '700',
     },
     subtitle: {
-        color: Theme.colors.accent,
+        color: colors.accent,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -104,13 +122,13 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     sectionTitle: {
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 8,
     },
     sectionDesc: {
-        color: Theme.colors.textMuted,
+        color: colors.textMuted,
         fontSize: 14,
         marginBottom: 20,
     },
@@ -118,12 +136,12 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     textArea: {
-        backgroundColor: Theme.colors.inputBg,
-        borderColor: Theme.colors.inputBorder,
+        backgroundColor: colors.inputBg,
+        borderColor: colors.inputBorder,
         borderWidth: 1,
         borderRadius: 10,
         padding: 13,
-        color: Theme.colors.text,
+        color: colors.text,
         fontSize: 14,
         height: 120,
         textAlignVertical: 'top',

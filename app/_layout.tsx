@@ -6,8 +6,12 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as SystemUI from 'expo-system-ui';
-import { Theme } from '../constants/theme';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ThemeProvider as AppThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { SettingsProvider } from '../contexts/SettingsContext';
+import { BookingsProvider } from '../contexts/BookingsContext';
+import { RequestsProvider } from '../contexts/RequestsContext';
+import { ApplicationsProvider } from '../contexts/ApplicationsContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -16,11 +20,11 @@ export const unstable_settings = {
 function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
-  const colorScheme = useColorScheme();
+  const { colors, darkMode } = useTheme();
 
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync(Theme.colors.bg1);
-  }, []);
+    SystemUI.setBackgroundColorAsync(colors.bg1);
+  }, [colors.bg1]);
 
   useEffect(() => {
     if (loading) return;
@@ -40,30 +44,50 @@ function RootLayoutNav() {
     ...DarkTheme,
     colors: {
       ...DarkTheme.colors,
-      background: Theme.colors.bg1,
-      card: Theme.colors.navBg,
-      text: Theme.colors.text,
-      border: Theme.colors.cardBorder,
+      background: colors.bg1,
+      card: colors.navBg,
+      text: colors.text,
+      border: colors.cardBorder,
+    },
+  };
+  const CustomLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: colors.bg1,
+      card: colors.navBg,
+      text: colors.text,
+      border: colors.cardBorder,
     },
   };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : DefaultTheme}>
+    <ThemeProvider value={darkMode ? CustomDarkTheme : CustomLightTheme}>
       <Stack>
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
-      <StatusBar style="light" />
+      <StatusBar style={darkMode ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <AppThemeProvider initialDarkMode={useColorScheme() !== 'light'}>
+      <SettingsProvider>
+        <RequestsProvider>
+          <ApplicationsProvider>
+            <BookingsProvider>
+              <AuthProvider>
+                <RootLayoutNav />
+              </AuthProvider>
+            </BookingsProvider>
+          </ApplicationsProvider>
+        </RequestsProvider>
+      </SettingsProvider>
+    </AppThemeProvider>
   );
 }
