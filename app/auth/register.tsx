@@ -1,6 +1,6 @@
 import { Picker } from '@react-native-picker/picker';
 import { Link, router } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -55,14 +55,23 @@ export default function RegisterScreen() {
 
             // 2. Django Backend Sync (Task 5 Requirement)
             try {
-                await authAPI.register({
+                const djangoRes = await authAPI.register({
                     email,
                     password,
                     full_name: name,
                     role: isWorker ? 'service_worker' : 'homeowner'
                 });
+                
+                if (djangoRes?.status === 'error' || djangoRes?.errors) {
+                    throw new Error(djangoRes.message || "Django Registration Failed");
+                }
             } catch (apiErr) {
-                console.warn("Backend registration sync failed. check server connectivity.");
+                console.warn("Backend registration sync failed. Rolling back Firebase user...");
+                // If the backend fails, delete the Firebase user to prevent stranded accounts
+                if (auth.currentUser) {
+                    await deleteUser(auth.currentUser);
+                }
+                throw new Error("Database sync failed. Please try again.");
             }
 
             openModal('Success', `Welcome to SerbiSure, ${name}!`);

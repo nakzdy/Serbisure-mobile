@@ -9,6 +9,7 @@ import { Card, Input } from '../../components/CommonUI';
 import AppModal from '../../components/Modal';
 import { auth, db } from '../../constants/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { authAPI } from '../../services/api';
 // import * as WebBrowser from 'expo-web-browser';
@@ -18,7 +19,7 @@ import { authAPI } from '../../services/api';
 
 export default function LoginScreen() {
     const { colors } = useTheme();
-    const { setManualAuthActive } = useAuth();
+    const { setManualAuthActive, setUser } = useAuth();
     const styles = createStyles(colors);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -162,14 +163,36 @@ export default function LoginScreen() {
             // 2. Sync with Django Backend (Task 5 Requirement)
             try {
                 const djangoData = await authAPI.login({ email, password });
-                if (djangoData.status !== 'success') {
-                    throw new Error(djangoData.message || 'Django Auth failed');
+                if (djangoData?.status === 'error' || (!djangoData?.token && !djangoData?.data?.token)) {
+                    throw new Error(djangoData?.message || 'Django Auth failed');
                 }
             } catch (apiErr) {
-                console.warn("Backend sync failed, but Firebase succeeded. Check server connectivity.");
+                console.warn("Backend sync failed, but Firebase succeeded. Attempting to auto-sync missing Neon account...");
+                try {
+                    // Automatically create the stranded user in Neon DB
+                    await authAPI.register({
+                        email,
+                        password,
+                        full_name: docSnap.data().name || email.split('@')[0],
+                        role: expectedRole === 'worker' ? 'service_worker' : 'homeowner'
+                    });
+                    // Re-attempt login to get token
+                    await authAPI.login({ email, password });
+                } catch (syncErr) {
+                    console.error("Auto-sync failed:", syncErr);
+                    throw new Error("Account exists in Firebase but could not be synchronized to the main database.");
+                }
             }
 
             // Validation passed! Allow router to navigate explicitly
+            const profileData = docSnap.data() || {};
+            setUser({
+                uid: userCredential.user.uid,
+                email: userCredential.user.email,
+                name: profileData.name || userCredential.user.displayName || profileData.full_name || email.split('@')[0],
+                ...profileData,
+                role: expectedRole
+            });
             setManualAuthActive(false);
             router.replace('/(tabs)');
         } catch (error: any) {

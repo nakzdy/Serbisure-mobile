@@ -11,6 +11,8 @@ interface AuthContextType {
     isAuthenticated: boolean;
     manualAuthActive: boolean;
     setManualAuthActive: (active: boolean) => void;
+    logout: () => Promise<void>;
+    setUser: (user: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,13 +20,26 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     isAuthenticated: false,
     manualAuthActive: false,
-    setManualAuthActive: () => {}
+    setManualAuthActive: () => {},
+    logout: async () => {},
+    setUser: () => {}
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const [manualAuthActive, setManualAuthActive] = useState(false);
+
+    const logout = async () => {
+        try {
+            await AsyncStorage.removeItem('serbisure_token');
+            await auth.signOut();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setUser(null);
+        }
+    };
 
     useEffect(() => {
         let unsubscribeFirebase: (() => void) | undefined;
@@ -39,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setUser({
                             uid: djangoUser.id,
                             email: djangoUser.email,
-                            full_name: djangoUser.full_name,
+                            name: djangoUser.full_name,
                             role: djangoUser.role === 'service_worker' ? 'worker' : 'homeowner',
                         });
                         setLoading(false);
@@ -62,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             setUser({
                                 uid: firebaseUser.uid,
                                 email: firebaseUser.email,
+                                name: profileData.name || firebaseUser.displayName || profileData.full_name,
                                 ...profileData
                             });
                         } else {
@@ -95,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, manualAuthActive, setManualAuthActive }}>
+        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, manualAuthActive, setManualAuthActive, logout, setUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -53,7 +53,7 @@ export const BookingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 const mapped: Booking[] = data.map((b: any) => ({
                     id: b.id.toString(),
                     workerId: b.service.toString(),
-                    workerName: b.service_details?.provider_name || b.service_details?.name || 'Worker',
+                    workerName: b.service_details?.provider?.full_name || b.service_details?.name || 'Worker',
                     skills: [b.service_details?.category || 'Service'],
                     reliability: 90,
                     status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
@@ -97,8 +97,17 @@ export const BookingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const value = useMemo(() => ({
     bookings,
     addBooking: (booking: Booking) => setBookings(prev => [booking, ...prev]),
-    updateBookingStatus: (id: string, status: Booking['status']) =>
-      setBookings(prev => prev.map(item => item.id === id ? { ...item, status } : item)),
+    updateBookingStatus: async (id: string, status: Booking['status']) => {
+      try {
+        if (!settings.mockDataEnabled) {
+          // Backend expects lowercase status (e.g. 'completed', 'cancelled')
+          await bookingsAPI.updateBooking(id, { status: status.toLowerCase() });
+        }
+      } catch (err) {
+        console.warn('Failed to update booking status in backend', err);
+      }
+      setBookings(prev => prev.map(item => item.id === id ? { ...item, status } : item));
+    },
   }), [bookings]);
 
   return (

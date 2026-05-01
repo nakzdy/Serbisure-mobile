@@ -14,14 +14,21 @@ const getHeaders = async () => {
     return headers;
 };
 
+// Global response handler to catch 401/403 Unauthorized errors
+const handleResponse = async (response: Response) => {
+    if (response.status === 401 || response.status === 403) {
+        console.warn("Unauthorized access detected. Clearing session...");
+        await AsyncStorage.removeItem('serbisure_token');
+    }
+    if (response.status === 204) return { status: 'success' };
+    return response.json();
+};
+
 export const apiService = {
     get: async (endpoint: string) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'GET',
-            headers,
-        });
-        return response.json();
+        const response = await fetch(`${API_BASE}${endpoint}`, { method: 'GET', headers });
+        return handleResponse(response);
     },
 
     post: async (endpoint: string, data: any) => {
@@ -31,7 +38,7 @@ export const apiService = {
             headers,
             body: JSON.stringify(data),
         });
-        return response.json();
+        return handleResponse(response);
     },
 
     put: async (endpoint: string, data: any) => {
@@ -41,17 +48,23 @@ export const apiService = {
             headers,
             body: JSON.stringify(data),
         });
-        return response.json();
+        return handleResponse(response);
+    },
+
+    patch: async (endpoint: string, data: any) => {
+        const headers = await getHeaders();
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(data),
+        });
+        return handleResponse(response);
     },
 
     delete: async (endpoint: string) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'DELETE',
-            headers,
-        });
-        if (response.status === 204) return { status: 'success' };
-        return response.json();
+        const response = await fetch(`${API_BASE}${endpoint}`, { method: 'DELETE', headers });
+        return handleResponse(response);
     },
 };
 
@@ -94,13 +107,7 @@ export const servicesAPI = {
         return apiService.post('/services/', data);
     },
     updateService: async (id: string | number, data: any) => {
-        const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}/services/${id}/`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify(data),
-        });
-        return response.json();
+        return apiService.patch(`/services/${id}/`, data);
     },
     deleteService: async (id: string | number) => {
         return apiService.delete(`/services/${id}/`);
@@ -114,6 +121,9 @@ export const bookingsAPI = {
     },
     createBooking: async (bookingData: any) => {
         return apiService.post('/bookings/', bookingData);
+    },
+    updateBooking: async (id: string | number, data: any) => {
+        return apiService.patch(`/bookings/${id}/`, data);
     },
     deleteBooking: async (id: string | number) => {
         return apiService.delete(`/bookings/${id}/`);

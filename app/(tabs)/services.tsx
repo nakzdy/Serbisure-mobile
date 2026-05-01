@@ -44,7 +44,7 @@ export default function ServicesScreen() {
                 const mapped = data.map((s: any) => ({
                     id: s.id.toString(),
                     provider_id: s.provider?.id || s.provider,
-                    name: s.provider_name || s.name,
+                    name: s.provider?.full_name || s.name,
                     skills: [s.category],
                     reliability: 90, // Placeholder
                     verified: true,
@@ -98,13 +98,17 @@ export default function ServicesScreen() {
         }
 
         try {
-            await servicesAPI.createService(newService);
+            const res = await servicesAPI.createService(newService);
+            if (res.status === 'error' || res.detail) {
+                throw new Error(res.message || res.detail || JSON.stringify(res));
+            }
             setInfoModal({ visible: true, title: 'Success', message: 'Service posted successfully!' });
             setIsPostModalOpen(false);
             setNewService({ name: '', category: 'Cleaning', price: '', description: '' });
             fetchServices();
-        } catch (err) {
-            setInfoModal({ visible: true, title: 'Error', message: 'Failed to post service.' });
+        } catch (err: any) {
+            console.warn("Failed to post service:", err.message);
+            setInfoModal({ visible: true, title: 'Error', message: `Failed to post service: ${err.message}` });
         }
     };
 
@@ -124,13 +128,16 @@ export default function ServicesScreen() {
 
         // 1. Sync with Backend (Task 5/7 Requirement)
         try {
-            await bookingsAPI.createBooking({
+            const res = await bookingsAPI.createBooking({
                 service: parseInt(workerId),
                 scheduled_date: new Date().toISOString().split('T')[0], // Today's date
             });
-        } catch (apiErr) {
-            console.warn("Backend booking failed. Ensure you are logged in correctly.");
-            setInfoModal({ visible: true, title: 'Network Error', message: 'Could not sync booking with the server.' });
+            if (res.status === 'error' || res.detail) {
+                throw new Error(res.message || res.detail || JSON.stringify(res));
+            }
+        } catch (apiErr: any) {
+            console.warn("Backend booking failed:", apiErr.message);
+            setInfoModal({ visible: true, title: 'Network Error', message: `Could not sync booking: ${apiErr.message}` });
             return;
         }
 

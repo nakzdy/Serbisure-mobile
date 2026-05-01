@@ -17,7 +17,7 @@ type SettingsContextValue = {
 const DEFAULT_SETTINGS: Settings = {
   language: 'English',
   avatarColor: '#638cff',
-  mockDataEnabled: true,
+  mockDataEnabled: false,
 };
 
 const STORAGE_KEY = 'serbisure.settings';
@@ -38,7 +38,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          setSettings(prev => ({ ...prev, ...parsed }));
+          // Force mock data off for testing new user state
+          setSettings(prev => ({ ...prev, ...parsed, mockDataEnabled: false }));
         }
       } catch (error) {
         console.warn('Failed to load settings', error);

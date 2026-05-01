@@ -11,7 +11,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useSettings } from '../../../contexts/SettingsContext';
 
 export default function SettingsScreen() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const { colors, darkMode, setDarkMode } = useTheme();
     const { settings, setLanguage, setAvatarColor, setMockDataEnabled } = useSettings();
     const styles = createStyles(colors);
@@ -36,11 +36,7 @@ export default function SettingsScreen() {
     };
 
     const handleLogout = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error('Error logging out:', error);
-        }
+        await logout();
     };
 
     return (
