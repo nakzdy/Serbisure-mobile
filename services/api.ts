@@ -89,6 +89,9 @@ export const authAPI = {
     getProfile: async () => {
         return apiService.get('/profile/');
     },
+    updateProfile: async (data: any) => {
+        return apiService.patch('/profile/', data);
+    },
     googleSync: async (userData: any) => {
         const response = await apiService.post('/auth/google-sync/', userData);
         if (response.status === 'success' && response.data?.token) {

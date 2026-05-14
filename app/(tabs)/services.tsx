@@ -23,7 +23,7 @@ export default function ServicesScreen() {
   const { user } = useAuth();
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const params = useLocalSearchParams<{ book?: string }>();
+  const params = useLocalSearchParams<{ book?: string; post?: string }>();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [workers, setWorkers] = useState<any[]>([]);
@@ -78,6 +78,18 @@ export default function ServicesScreen() {
   useEffect(() => {
     fetchServices();
   }, []);
+
+  useEffect(() => {
+    // If navigated with ?post=1 open the post modal and clean the URL
+    if (params.post && (params.post === '1' || params.post === 'true')) {
+      setIsPostModalOpen(true);
+      try {
+        router.replace('/(tabs)/services');
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [params.post]);
 
   const filteredWorkers = useMemo(() => {
     // If user is a worker, show only their own services
@@ -306,45 +318,53 @@ export default function ServicesScreen() {
 
       <AppModal
         visible={isPostModalOpen}
-        title="Post New Service"
+        title="Post a Service"
         onClose={() => setIsPostModalOpen(false)}
         actions={[
-          { label: "Post Now", type: "primary", onPress: handlePostService },
-          { label: "Cancel", type: "secondary" },
+          { label: "Cancel", type: "secondary", onPress: () => setIsPostModalOpen(false) },
+          { label: "Post Service", type: "primary", onPress: handlePostService },
         ]}
       >
-        <View style={styles.modalBlock}>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Service Title"
-            placeholderTextColor={colors.textMuted}
-            value={newService.name}
-            onChangeText={(text) =>
-              setNewService({ ...newService, name: text })
-            }
-          />
-          <View style={{ height: 10 }} />
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Price (₱)"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="numeric"
-            value={newService.price}
-            onChangeText={(text) =>
-              setNewService({ ...newService, price: text })
-            }
-          />
-          <View style={{ height: 10 }} />
-          <TextInput
-            style={[styles.searchBar, { height: 100 }]}
-            placeholder="Description"
-            placeholderTextColor={colors.textMuted}
-            multiline
-            value={newService.description}
-            onChangeText={(text) =>
-              setNewService({ ...newService, description: text })
-            }
-          />
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: colors.textMuted, marginBottom: 8 }}>Offer your skills to homeowners</Text>
+          <View style={styles.formContainer}>
+            <TextInput
+              style={styles.formInput}
+              placeholder="e.g. Master Plumbing"
+              placeholderTextColor={colors.textMuted}
+              value={newService.name}
+              onChangeText={(text) => setNewService({ ...newService, name: text })}
+            />
+
+            <View style={{ height: 10 }} />
+            <TextInput
+              style={styles.formInput}
+              placeholder="Cleaning"
+              placeholderTextColor={colors.textMuted}
+              value={newService.category}
+              onChangeText={(text) => setNewService({ ...newService, category: text })}
+            />
+
+            <View style={{ height: 10 }} />
+            <TextInput
+              style={styles.formInput}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="numeric"
+              value={newService.price}
+              onChangeText={(text) => setNewService({ ...newService, price: text })}
+            />
+
+            <View style={{ height: 10 }} />
+            <TextInput
+              style={[styles.formInput, { height: 120 }]}
+              placeholder="Describe what you offer..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              value={newService.description}
+              onChangeText={(text) => setNewService({ ...newService, description: text })}
+            />
+          </View>
         </View>
       </AppModal>
 
@@ -394,7 +414,7 @@ export default function ServicesScreen() {
             : "Find and book verified service providers for your home"}
         </Text>
         <View style={styles.headerActions}>
-          {user?.role === "worker" ? (
+          {(user?.role === "worker" || user?.role === 'service_worker') ? (
             <Button
               title="+ Post New Service"
               onPress={() => setIsPostModalOpen(true)}
@@ -468,11 +488,21 @@ export default function ServicesScreen() {
             </View>
           ))
         ) : (
-          <Text style={styles.noResults}>
-            {user?.role === "worker"
-              ? "You haven't posted any services yet. Click '+ Post New Service' to get started!"
-              : `No workers found for '${selectedCategory}'.`}
-          </Text>
+          (user?.role === "worker" || user?.role === 'service_worker') ? (
+            <Card style={styles.emptyCard}>
+              <View style={styles.emptyInner}>
+                <View style={styles.emptyIcon} />
+                <Text style={styles.emptyTitle}>No services posted yet</Text>
+                <Text style={styles.emptySubtitle}>Tap "Post New Service" to list the skills you offer to clients.</Text>
+                <View style={{ height: 12 }} />
+                <Button title="+ Post New Service" onPress={() => setIsPostModalOpen(true)} />
+              </View>
+            </Card>
+          ) : (
+            <Text style={styles.noResults}>
+              {`No workers found for '${selectedCategory}'.`}
+            </Text>
+          )
         )}
       </View>
     </ScrollView>
@@ -653,8 +683,51 @@ const createStyles = (
       paddingVertical: 32,
       fontSize: 14,
     },
+    emptyCard: {
+      padding: 28,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 24,
+    },
+    emptyInner: {
+      alignItems: 'center',
+    },
+    emptyIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      backgroundColor: colors.cardBgSolid,
+      marginBottom: 12,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 6,
+    },
+    emptySubtitle: {
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
     modalBlock: {
       gap: 8,
+    },
+    formContainer: {
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: colors.cardBgSolid,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    formInput: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.03)',
+      padding: 12,
+      borderRadius: 8,
+      color: colors.text,
     },
     modalTitle: {
       color: colors.text,

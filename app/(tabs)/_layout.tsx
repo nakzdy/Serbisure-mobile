@@ -67,7 +67,7 @@ export default function TabLayout() {
         name="applications/index"
         options={{
           title: 'Applications',
-          href: isWorker ? '/applications' : null,
+          href: null,
           tabBarIcon: ({ color }) => <Ionicons size={24} name="clipboard" color={color} />,
           headerShown: false,
         }}

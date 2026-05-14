@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
-import { doc, updateDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card, Input } from '../../components/CommonUI';
 import AppModal from '../../components/Modal';
-import { db } from '../../constants/firebase';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { authAPI } from '../../services/api';
 
 export default function OnboardingScreen() {
     const { user } = useAuth();
@@ -30,8 +29,7 @@ export default function OnboardingScreen() {
     const handleComplete = async () => {
         setLoading(true);
         try {
-            const docRef = doc(db, "users", user.uid);
-            await updateDoc(docRef, {
+            const payload = {
                 skills,
                 bio,
                 isWorkerOnboarded: true,
@@ -39,11 +37,12 @@ export default function OnboardingScreen() {
                     skills: skills.split(',').map((s: string) => s.trim()),
                     bio
                 }
-            });
+            };
+            await authAPI.updateProfile(payload);
             openModal('Success', 'Onboarding completed!');
             router.replace('/(tabs)/explore');
         } catch (error: any) {
-            openModal('Error', error.message);
+            openModal('Error', error.message || String(error));
         } finally {
             setLoading(false);
         }

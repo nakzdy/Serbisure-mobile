@@ -1,13 +1,11 @@
 import { Picker } from '@react-native-picker/picker';
-import { Link, router } from 'expo-router';
-import { createUserWithEmailAndPassword, updateProfile, deleteUser } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card, Input } from '../../components/CommonUI';
 import AppModal from '../../components/Modal';
-import { auth, db } from '../../constants/firebase';
+// Firebase removed from mobile; use Django APIs
 import { useTheme } from '../../contexts/ThemeContext';
 import { authAPI } from '../../services/api';
 
@@ -38,41 +36,27 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            // 1. Firebase Auth (Legacy/OAuth support)
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, { displayName: name });
-
             const isWorker = role === 'Service Worker';
-            const profileData = {
-                name,
-                role: isWorker ? "worker" : "homeowner",
-                skills: isWorker ? skill : "",
-                isWorkerOnboarded: isWorker,
-                workerProfile: isWorker ? { skills: [skill] } : null
-            };
+            // 1. Register with Django backend (primary)
+            const djangoRes = await authAPI.register({
+                email,
+                password,
+                full_name: name,
+                role: isWorker ? 'service_worker' : 'homeowner'
+            });
 
-            await setDoc(doc(db, "users", userCredential.user.uid), profileData);
-
-            // 2. Django Backend Sync (Task 5 Requirement)
-            try {
-                const djangoRes = await authAPI.register({
-                    email,
-                    password,
-                    full_name: name,
-                    role: isWorker ? 'service_worker' : 'homeowner'
-                });
-                
-                if (djangoRes?.status === 'error' || djangoRes?.errors) {
-                    throw new Error(djangoRes.message || "Django Registration Failed");
-                }
-            } catch (apiErr) {
-                console.warn("Backend registration sync failed. Rolling back Firebase user...");
-                // If the backend fails, delete the Firebase user to prevent stranded accounts
-                if (auth.currentUser) {
-                    await deleteUser(auth.currentUser);
-                }
-                throw new Error("Database sync failed. Please try again.");
+            if (djangoRes?.status === 'error' || djangoRes?.errors) {
+                throw new Error(djangoRes.message || 'Django Registration Failed');
             }
+
+            // Set app user from Django response
+            const djangoUser = djangoRes.data?.user || djangoRes.user || djangoRes;
+            setUser({
+                uid: djangoUser.id || email,
+                email: djangoUser.email || email,
+                name: djangoUser.full_name || name,
+                role: djangoUser.role === 'service_worker' ? 'worker' : 'homeowner'
+            });
 
             openModal('Success', `Welcome to SerbiSure, ${name}!`);
             router.replace('/(tabs)');

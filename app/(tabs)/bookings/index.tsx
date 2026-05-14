@@ -11,6 +11,23 @@ import { useRequests } from '../../../contexts/RequestsContext';
 import { useApplications } from '../../../contexts/ApplicationsContext';
 import AppModal from '../../../components/Modal';
 
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return 'TBD';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 export default function BookingsScreen() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -155,9 +172,9 @@ export default function BookingsScreen() {
             <Card key={booking.id} style={styles.bookingCard}>
               <View style={styles.bookingTop}>
                 <View>
-                  <Text style={styles.workerName}>{booking.homeownerName || 'Homeowner'}</Text>
+                  <Text style={styles.workerName}>{booking.homeownerName && booking.homeownerName !== 'Homeowner' ? booking.homeownerName : booking.homeownerName || 'Homeowner'}</Text>
                   <Text style={styles.workerMeta}>{booking.serviceType || ((booking.skills && booking.skills.length > 0) ? booking.skills.join(', ') : 'Service Request')}</Text>
-                  <Text style={styles.workerMeta}>Service Date: {booking.serviceDate || booking.createdAt || 'TBD'}</Text>
+                  <Text style={styles.workerMeta}>Service Date: {formatDate(booking.serviceDate || booking.createdAt || '')}</Text>
                 </View>
                 <Badge
                   text={booking.status}
@@ -213,7 +230,7 @@ export default function BookingsScreen() {
               <Text style={styles.workerName}>{booking.workerName}</Text>
               <Text style={styles.workerMeta}>{booking.serviceType || ((booking.skills && booking.skills.length > 0) ? booking.skills.join(', ') : 'Service Request')}</Text>
               <Text style={styles.workerMeta}>Reliability: {booking.reliability ?? 'N/A'}%</Text>
-              <Text style={styles.workerMeta}>Service Date: {booking.serviceDate || booking.createdAt || 'TBD'}</Text>
+              <Text style={styles.workerMeta}>Service Date: {formatDate(booking.serviceDate || booking.createdAt || '')}</Text>
             </View>
             <Badge
               text={booking.status}

@@ -56,8 +56,14 @@ export default function AppModal({
               return (
                 <TouchableOpacity
                   key={`${action.label}-${index}`}
-                  onPress={() => {
-                    action.onPress?.();
+                  onPress={async () => {
+                    try {
+                      const result = await action.onPress?.();
+                      // If the handler explicitly returns false, keep the modal open
+                      if (result === false) return;
+                    } catch (e) {
+                      // swallow - let onClose still run so caller can show error
+                    }
                     onClose();
                   }}
                   style={[styles.actionBtn, isPrimary ? styles.primaryBtn : styles.secondaryBtn]}
@@ -85,12 +91,12 @@ const createStyles = (colors: typeof import('../constants/theme').DarkColors) =>
   },
   card: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 440,
     backgroundColor: colors.cardBgSolid,
     borderColor: colors.cardBorder,
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 18,
+    padding: 18,
   },
   header: {
     flexDirection: 'row',
@@ -134,6 +140,10 @@ const createStyles = (colors: typeof import('../constants/theme').DarkColors) =>
   },
   primaryBtn: {
     backgroundColor: colors.accent,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    elevation: 2,
   },
   secondaryBtn: {
     backgroundColor: 'transparent',

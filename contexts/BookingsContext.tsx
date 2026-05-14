@@ -54,10 +54,13 @@ export const BookingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     id: b.id.toString(),
                     workerId: b.service.toString(),
                     workerName: b.service_details?.provider?.full_name || b.service_details?.name || 'Worker',
+                    homeownerName: b.homeowner_details?.full_name || b.homeowner_details?.name || b.client_details?.full_name || b.client_details?.name || b.homeowner_name || b.client_name || 'Homeowner',
                     skills: [b.service_details?.category || 'Service'],
+                    serviceType: b.service_details?.category || b.service_details?.name || '',
+                    serviceDate: b.scheduled_date || b.service_date || b.date || b.createdAt || b.created_at || '',
                     reliability: 90,
                     status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
-                    createdAt: new Date().toISOString(),
+                    createdAt: b.created_at || new Date().toISOString(),
                 }));
                 setBookings(mapped);
                 return;

@@ -1,14 +1,13 @@
-import { signOut } from 'firebase/auth';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../components/Button';
 import { Card, Input } from '../../../components/CommonUI';
 import AppModal from '../../../components/Modal';
-import { auth } from '../../../constants/firebase';
+// Firebase removed from mobile; using Django-backed auth
 import { useAuth } from '../../../contexts/AuthContext';
-import { useTheme } from '../../../contexts/ThemeContext';
 import { useSettings } from '../../../contexts/SettingsContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
     const { user, logout } = useAuth();
