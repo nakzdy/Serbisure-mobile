@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../../components/Button';
 import { Card, Input } from '../../../components/CommonUI';
 import AppModal from '../../../components/Modal';
-// Firebase removed from mobile; using Django-backed auth
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSettings } from '../../../contexts/SettingsContext';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -213,7 +212,7 @@ const createStyles = (colors: typeof import('../../../constants/theme').DarkColo
         marginRight: 24,
     },
     avatarText: {
-        color: '#FFF',
+        color: colors.textOnAccent,
         fontSize: 32,
         fontWeight: '700',
     },

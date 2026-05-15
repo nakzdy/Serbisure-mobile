@@ -103,11 +103,11 @@ export const BookingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateBookingStatus: async (id: string, status: Booking['status']) => {
       try {
         if (!settings.mockDataEnabled) {
-          // Backend expects lowercase status (e.g. 'completed', 'cancelled')
+          // API expects lowercase status (e.g. 'completed', 'cancelled')
           await bookingsAPI.updateBooking(id, { status: status.toLowerCase() });
         }
       } catch (err) {
-        console.warn('Failed to update booking status in backend', err);
+        console.warn('Failed to update booking status', err);
       }
       setBookings(prev => prev.map(item => item.id === id ? { ...item, status } : item));
     },

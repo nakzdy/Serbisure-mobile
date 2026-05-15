@@ -63,16 +63,16 @@ const createStyles = (colors: typeof import('../constants/theme').DarkColors) =>
         borderWidth: 1,
     },
     badge_primary: {
-        backgroundColor: 'rgba(91, 79, 232, 0.15)',
-        borderColor: 'rgba(91, 79, 232, 0.25)',
+        backgroundColor: colors.statusPending,
+        borderColor: colors.statusPendingBorder,
     },
     badge_outline: {
         backgroundColor: 'transparent',
         borderColor: colors.cardBorder,
     },
     badge_success: {
-        backgroundColor: 'rgba(76, 209, 55, 0.15)',
-        borderColor: 'rgba(76, 209, 55, 0.25)',
+        backgroundColor: `${colors.success}1A`,
+        borderColor: `${colors.success}40`,
     },
     badge_pending: {
         backgroundColor: colors.statusPending,

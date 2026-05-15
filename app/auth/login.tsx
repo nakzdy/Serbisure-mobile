@@ -1,9 +1,10 @@
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Image } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card, Input } from '../../components/CommonUI';
+import { GradientText } from '../../components/GradientText';
 import AppModal from '../../components/Modal';
 // Firebase removed for mobile; use Django APIs only
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,7 +43,7 @@ export default function LoginScreen() {
         setModal(prev => ({ ...prev, visible: false }));
     };
 
-    
+
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -52,7 +53,7 @@ export default function LoginScreen() {
 
         setLoading(true);
         setManualAuthActive(true); // Prevent _layout.tsx from auto-redirecting
-        
+
         try {
             const isWorkerSelection = role === 'Service Worker';
             const expectedRole = isWorkerSelection ? 'worker' : 'homeowner';
@@ -65,12 +66,14 @@ export default function LoginScreen() {
                 if (djangoData && (djangoData.status === 'success' || djangoData.token || djangoData.data?.token || djangoData.user)) {
                     djangoOk = true;
                 }
-            } catch (djErr) {
+            } catch (djErr: any) {
                 djangoOk = false;
                 djangoData = null;
+                if (djErr && djErr.message && djErr.message.toLowerCase().includes('network')) {
+                    throw new Error('Unable to connect to the server. Please check your network connection and try again.');
+                }
             }
 
-            // 2. Use Django response as primary source. If authenticated, set user and continue.
             if (djangoOk && djangoData) {
                 const djangoUser = djangoData.data?.user || djangoData.data || djangoData.user || djangoData;
                 // Validate role selection
@@ -98,7 +101,7 @@ export default function LoginScreen() {
                 return;
             }
 
-            // If we reach here, both Django and Firebase auth failed
+            // If we reach here, Django auth failed (not a network error)
             throw new Error('Login failed. Please check your credentials.');
         } catch (error: any) {
             const code = error?.code || error?.message || String(error);
@@ -122,8 +125,12 @@ export default function LoginScreen() {
             />
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>SerbiSure</Text>
-                    <Text style={styles.subtitle}>Mobile</Text>
+                    <Image
+                        source={require('../../assets/images/logo.png')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                    <GradientText style={styles.title}>SerbiSure</GradientText>
                 </View>
 
                 <Card style={styles.card}>
@@ -210,6 +217,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 32,
+    },
+    logoImage: {
+        width: 80,
+        height: 80,
+        marginBottom: 12,
     },
     title: {
         fontSize: 42,

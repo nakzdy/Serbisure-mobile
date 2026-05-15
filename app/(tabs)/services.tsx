@@ -68,7 +68,7 @@ export default function ServicesScreen() {
         setWorkers(MOCK_WORKERS);
       }
     } catch (err) {
-      console.warn("Failed to fetch services from Django, using mock data.");
+      console.warn("Failed to fetch services, using mock data.");
       setWorkers(MOCK_WORKERS);
     } finally {
       setLoading(false);
@@ -192,7 +192,7 @@ export default function ServicesScreen() {
     );
     if (alreadyBooked) return;
 
-    // 1. Sync with Backend (Task 5/7 Requirement)
+    // 1. Sync with API (Task 5/7 Requirement)
     let bookingId = `${workerId}-${Date.now()}`;
     try {
       const res = await bookingsAPI.createBooking({
@@ -206,11 +206,11 @@ export default function ServicesScreen() {
         bookingId = res.data.id.toString();
       }
     } catch (apiErr: any) {
-      console.warn("Backend booking failed:", apiErr.message);
+      console.warn("Failed to create booking:", apiErr.message);
       setInfoModal({
         visible: true,
         title: "Network Error",
-        message: `Could not sync booking: ${apiErr.message}`,
+        message: `Could not create booking: ${apiErr.message}`,
       });
       return;
     }
@@ -279,8 +279,8 @@ export default function ServicesScreen() {
           title="Delete Service"
           type="outline"
           onPress={() => handleDeleteService(item.id)}
-          style={{ borderColor: "#ff4757" }}
-          textStyle={{ color: "#ff4757" }}
+          style={{ borderColor: colors.danger }}
+          textStyle={{ color: colors.danger }}
         />
       ) : (
         <Button
@@ -724,7 +724,7 @@ const createStyles = (
     formInput: {
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.03)',
+      borderColor: colors.inputBorder,
       padding: 12,
       borderRadius: 8,
       color: colors.text,

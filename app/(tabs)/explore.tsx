@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/CommonUI";
+import { GradientText } from "../../components/GradientText";
 import AppModal from "../../components/Modal";
 import { useApplications } from "../../contexts/ApplicationsContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -78,7 +80,6 @@ export default function WorkerDashboard() {
         const profile = await authAPI.getProfile();
         const profileData = profile?.data || profile;
         const workerRating = profileData?.worker_profile?.rating;
-        console.log('[Rating Debug] profile response:', JSON.stringify(profileData));
 
         if (workerRating != null && parseFloat(workerRating) > 0) {
           setAvgRating(parseFloat(parseFloat(workerRating).toFixed(1)));
@@ -86,7 +87,6 @@ export default function WorkerDashboard() {
           // Fallback: compute from bookings that have a rating
           const data = await bookingsAPI.getBookings();
           const safeBookings = Array.isArray(data) ? data : (data?.results || []);
-          console.log('[Rating Debug] bookings sample:', JSON.stringify(safeBookings.slice(0, 2)));
           const rated = safeBookings.filter((b: any) => b.rating != null && b.rating !== 0);
           if (rated.length > 0) {
             const avg = rated.reduce((sum: number, b: any) => sum + Number(b.rating), 0) / rated.length;
@@ -195,10 +195,12 @@ export default function WorkerDashboard() {
       {/* ===== HEADER BAR ===== */}
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>S</Text>
-          </View>
-          <Text style={styles.headerTitle}>SerbiSure</Text>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <GradientText style={styles.headerTitle}>SerbiSure</GradientText>
         </View>
 
         <View style={styles.headerRight}>
@@ -277,7 +279,7 @@ export default function WorkerDashboard() {
           </View>
           {/* Full-width post button below title */}
           <TouchableOpacity style={styles.postServiceBtn} activeOpacity={0.85} onPress={() => setIsPostModalOpen(true)}>
-            <Ionicons name="add-circle-outline" size={16} color="#fff" />
+            <Ionicons name="add-circle-outline" size={16} color={colors.textOnAccent} />
             <Text style={styles.postServiceBtnText}>Post New Service</Text>
           </TouchableOpacity>
 
@@ -448,7 +450,7 @@ export default function WorkerDashboard() {
           {/* Active Jobs */}
           <View style={styles.gridCard}>
             <Text style={styles.gridLabel}>ACTIVE JOBS</Text>
-            <Text style={[styles.gridValue, { color: "#4cd137" }]}>
+            <Text style={[styles.gridValue, { color: colors.success }]}>
               {activeJobsCount}
             </Text>
             <Text style={styles.gridHint}>In progress</Text>
@@ -569,19 +571,10 @@ const createStyles = (
       alignItems: "center",
       gap: 10,
     },
-    logoCircle: {
+    logoImage: {
       width: 36,
       height: 36,
       borderRadius: 10,
-      backgroundColor: colors.accent,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    logoText: {
-      color: "#fff",
-      fontSize: 18,
-      fontFamily: "SpaceGrotesk_700Bold",
-      fontWeight: "700",
     },
     headerTitle: {
       color: colors.text,
@@ -642,7 +635,7 @@ const createStyles = (
       marginBottom: 4,
     },
     postServiceBtnText: {
-      color: '#fff',
+      color: colors.textOnAccent,
       fontWeight: '700',
       fontSize: 14,
     },
@@ -756,13 +749,13 @@ const createStyles = (
     },
     deleteBtn: {
       borderWidth: 1,
-      borderColor: '#ff4757',
+      borderColor: colors.danger,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 8,
     },
     deleteBtnText: {
-      color: '#ff4757',
+      color: colors.danger,
       fontWeight: '700',
     },
 
@@ -776,8 +769,8 @@ const createStyles = (
       borderWidth: 1,
     },
     statusOnline: {
-      backgroundColor: "rgba(76, 209, 55, 0.15)",
-      borderColor: "rgba(76, 209, 55, 0.25)",
+      backgroundColor: `${colors.success}26`,
+      borderColor: `${colors.success}40`,
     },
     statusOffline: {
       backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -889,7 +882,7 @@ const createStyles = (
       fontFamily: "DMSans_600SemiBold",
     },
     statLabel: {
-      color: "#656580", // the slightly darker purple-gray text from mockup
+      color: colors.textMuted,
       fontSize: 12,
       fontFamily: "DMSans_500Medium",
     },
@@ -935,7 +928,7 @@ const createStyles = (
       alignItems: "flex-start",
     },
     gridLabel: {
-      color: "#656580", // Matches the statLabel color from mockup
+      color: colors.textMuted,
       fontSize: 11,
       fontFamily: "DMSans_600SemiBold",
       fontWeight: "700",
@@ -1012,7 +1005,7 @@ const createStyles = (
       marginBottom: 12,
     },
     reviewTime: {
-      color: "#656580",
+      color: colors.textMuted,
       fontSize: 12,
       fontFamily: "DMSans_400Regular",
     },

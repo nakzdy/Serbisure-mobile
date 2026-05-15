@@ -84,7 +84,7 @@ export default function AppModal({
 const createStyles = (colors: typeof import('../constants/theme').DarkColors) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(7, 8, 18, 0.72)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -155,7 +155,7 @@ const createStyles = (colors: typeof import('../constants/theme').DarkColors) =>
     fontWeight: '600',
   },
   primaryText: {
-    color: '#FFF',
+    color: colors.textOnAccent,
   },
   secondaryText: {
     color: colors.text,

@@ -14,6 +14,16 @@ const getHeaders = async () => {
     return headers;
 };
 
+const request = async (endpoint: string, options: RequestInit) => {
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        return handleResponse(response);
+    } catch (err: any) {
+        console.warn('API request failed:', err);
+        throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+    }
+};
+
 // Global response handler to catch 401/403 Unauthorized errors
 const handleResponse = async (response: Response) => {
     if (response.status === 401 || response.status === 403) {
@@ -27,44 +37,39 @@ const handleResponse = async (response: Response) => {
 export const apiService = {
     get: async (endpoint: string) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, { method: 'GET', headers });
-        return handleResponse(response);
+        return request(endpoint, { method: 'GET', headers });
     },
 
     post: async (endpoint: string, data: any) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, {
+        return request(endpoint, {
             method: 'POST',
             headers,
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
     },
 
     put: async (endpoint: string, data: any) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, {
+        return request(endpoint, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
     },
 
     patch: async (endpoint: string, data: any) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, {
+        return request(endpoint, {
             method: 'PATCH',
             headers,
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
     },
 
     delete: async (endpoint: string) => {
         const headers = await getHeaders();
-        const response = await fetch(`${API_BASE}${endpoint}`, { method: 'DELETE', headers });
-        return handleResponse(response);
+        return request(endpoint, { method: 'DELETE', headers });
     },
 };
 

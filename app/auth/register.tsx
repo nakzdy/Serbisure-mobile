@@ -1,16 +1,19 @@
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Image } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card, Input } from '../../components/CommonUI';
+import { GradientText } from '../../components/GradientText';
 import AppModal from '../../components/Modal';
 // Firebase removed from mobile; use Django APIs
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
 
 export default function RegisterScreen() {
     const { colors } = useTheme();
+    const { setUser } = useAuth();
     const styles = createStyles(colors);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -37,7 +40,7 @@ export default function RegisterScreen() {
         setLoading(true);
         try {
             const isWorker = role === 'Service Worker';
-            // 1. Register with Django backend (primary)
+            // 1. Register with Django API (primary)
             const djangoRes = await authAPI.register({
                 email,
                 password,
@@ -46,7 +49,7 @@ export default function RegisterScreen() {
             });
 
             if (djangoRes?.status === 'error' || djangoRes?.errors) {
-                throw new Error(djangoRes.message || 'Django Registration Failed');
+                throw new Error(djangoRes.message || 'Registration failed. Please review your information and try again.');
             }
 
             // Set app user from Django response
@@ -80,8 +83,12 @@ export default function RegisterScreen() {
             />
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>SerbiSure</Text>
-                    <Text style={styles.subtitle}>Mobile</Text>
+                    <Image
+                        source={require('../../assets/images/logo.png')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                    <GradientText style={styles.title}>SerbiSure</GradientText>
                 </View>
 
                 <Card style={styles.card}>
@@ -174,6 +181,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 32,
+    },
+    logoImage: {
+        width: 80,
+        height: 80,
+        marginBottom: 12,
     },
     title: {
         fontSize: 42,

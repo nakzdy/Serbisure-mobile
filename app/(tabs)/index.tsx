@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/CommonUI';
+import { GradientText } from '../../components/GradientText';
 import AppModal from '../../components/Modal';
 import { Badge } from '../../components/StatusUI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -268,10 +269,12 @@ export default function HomeownerDashboard() {
       {/* ===== HEADER BAR ===== */}
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>S</Text>
-          </View>
-          <Text style={styles.headerTitle}>SerbiSure</Text>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <GradientText style={styles.headerTitle}>SerbiSure</GradientText>
         </View>
         <TouchableOpacity
           style={styles.notifBtn}
@@ -518,19 +521,10 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     alignItems: 'center',
     gap: 10,
   },
-  logoCircle: {
+  logoImage: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'SpaceGrotesk_700Bold',
-    fontWeight: '700',
   },
   headerTitle: {
     color: colors.text,
@@ -583,9 +577,9 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: 'rgba(76, 209, 55, 0.1)',
+    backgroundColor: `${colors.success}1A`,
     borderWidth: 1,
-    borderColor: 'rgba(76, 209, 55, 0.2)',
+    borderColor: `${colors.success}33`,
   },
   systemDot: {
     width: 6,
@@ -647,14 +641,14 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     marginRight: 12,
   },
   bookBannerTitle: {
-    color: '#fff',
+    color: colors.textOnAccent,
     fontSize: 16,
     fontFamily: 'SpaceGrotesk_700Bold',
     fontWeight: '700',
     marginBottom: 4,
   },
   bookBannerSub: {
-    color: 'rgba(255,255,255,0.8)',
+    color: `${colors.textOnAccent}CC`,
     fontSize: 12,
     fontFamily: 'DMSans_400Regular',
   },
@@ -667,7 +661,7 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     borderRadius: 10,
   },
   bookNowBtnText: {
-    color: '#fff',
+    color: colors.textOnAccent,
     fontSize: 14,
     fontFamily: 'DMSans_600SemiBold',
     fontWeight: '700',
@@ -730,7 +724,7 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     fontWeight: '600',
   },
   tabPillTextActive: {
-    color: '#fff',
+    color: colors.textOnAccent,
   },
 
   // Request Cards
@@ -847,7 +841,7 @@ const createStyles = (colors: typeof import('../../constants/theme').DarkColors)
     marginRight: 10,
   },
   workerAvatarText: {
-    color: '#fff',
+    color: colors.textOnAccent,
     fontSize: 12,
     fontFamily: 'DMSans_600SemiBold',
     fontWeight: '700',
